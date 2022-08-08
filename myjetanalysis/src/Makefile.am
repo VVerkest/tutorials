@@ -6,22 +6,23 @@ AM_CPPFLAGS = \
   -I`root-config --incdir`
 
 lib_LTLIBRARIES = \
-   libmyjetanalysis.la
+   libcalojetrhoest.la
 
-libmyjetanalysis_la_LDFLAGS = \
+libcalojetrhoest_la_LDFLAGS = \
   -L$(libdir) \
-  -L$(OFFLINE_MAIN)/lib
+  -L$(OFFLINE_MAIN)/lib \
+  `fastjet-config --libs`
 
-libmyjetanalysis_la_LIBADD = \
+libcalojetrhoest_la_LIBADD = \
   -lfun4all \
   -lg4dst \
   -lg4eval
 
-libmyjetanalysis_la_SOURCES = \
-  MyJetAnalysis.cc
+libcalojetrhoest_la_SOURCES = \
+  CaloJetRhoEst.cc
 
 pkginclude_HEADERS = \
-  MyJetAnalysis.h
+  CaloJetRhoEst.h
 
 
 ################################################
@@ -36,7 +37,7 @@ testexternals_SOURCES = \
   testexternals.cc
 
 testexternals_LDADD = \
-  libmyjetanalysis.la
+  libcalojetrhoest.la
 
 testexternals.cc:
 	echo "//*** this is a generated file. Do not commit, do not edit" > $@
