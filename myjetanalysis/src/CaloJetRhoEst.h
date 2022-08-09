@@ -67,6 +67,7 @@ class CaloJetRhoEst : public SubsysReco
   TTree *m_T;
   int   m_id;
   float m_rho;
+  float m_rho_sigma;
   float m_centrality;
   float m_impactparam;
 
