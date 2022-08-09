@@ -84,6 +84,7 @@ int CaloJetRhoEst::Init(PHCompositeNode* topNode)
   //      int m_event;
   m_T->Branch("m_id",          &m_id);
   m_T->Branch("m_rho",         &m_rho);
+  m_T->Branch("m_rho_sigma",   &m_rho_sigma);
   m_T->Branch("m_centrality",  &m_centrality);
   m_T->Branch("m_impactparam", &m_impactparam);
 
@@ -161,13 +162,15 @@ int CaloJetRhoEst::process_event(PHCompositeNode* topNode)
     }
   }
 
-  // now make jets (as in from /direct/sphenix+u/dstewart/vv/coresoftware/simulation/g4simulation/g4jets/JetReco.cc ::94 ->
-  //                           /direct/sphenix+u/dstewart/vv/coresoftware/offline/packages/jetbackground/FastJetAlgoSub.h :: get_jets
+  // now make pseudojet particles 
+  //      (as in from /direct/sphenix+u/dstewart/vv/coresoftware/simulation/g4simulation/g4jets/JetReco.cc ::94 ->
+  //                  /direct/sphenix+u/dstewart/vv/coresoftware/offline/packages/jetbackground/FastJetAlgoSub.h :: get_jets
   auto& particles=inputs;
-  cout << " particles: " << particles.size() << endl;
+  /* cout << " particles: " << particles.size() << endl; */
 
   // /direct/sphenix+u/dstewart/vv/coresoftware/offline/packages/jetbackground/FastJetAlgoSub.cc ::58
-  std::vector<fastjet::PseudoJet> pseudojets;
+  std::vector<fastjet::PseudoJet> particles_pseudojets;
+  int   smallptcutcnt =0;//FIXME
   for (unsigned int ipart = 0; ipart < particles.size(); ++ipart)
   {
     float this_e = particles[ipart]->get_e();
@@ -183,7 +186,7 @@ int CaloJetRhoEst::process_event(PHCompositeNode* topNode)
       // make energy = +1 MeV for purposes of clustering
       float e_ratio = 0.001 / this_e;
 
-      this_e = this_e * e_ratio;
+      this_e  = this_e * e_ratio;
       this_px = this_px * e_ratio;
       this_py = this_py * e_ratio;
       this_pz = this_pz * e_ratio;
@@ -199,9 +202,15 @@ int CaloJetRhoEst::process_event(PHCompositeNode* topNode)
     fastjet::PseudoJet pseudojet(this_px, this_py, this_pz, this_e);
 
     pseudojet.set_user_index(ipart);
-    pseudojets.push_back(pseudojet);
-  }
 
+    float _pt = pseudojet.perp();
+    if (_pt < 0.002) {
+      /* cout << " CUT SMALL: " << _pt << endl; */
+      ++smallptcutcnt;
+    } else {
+      particles_pseudojets.push_back(pseudojet);
+    }
+  }
 
   //centrality
   /* CentralityInfo* cent_node = findNode::getClass<CentralityInfo>(topNode, "CentralityInfo"); */
@@ -232,75 +241,81 @@ int CaloJetRhoEst::process_event(PHCompositeNode* topNode)
 //    m_e.push_back(jet->get_e());
 //  }
     
-  PseudoJet leadJet, subLeadJet;
-  vector<PseudoJet> rhoJets;
-    
-  int count = 0;
-  bool have_lead = false;
-  bool have_sub = false;
-
+  // for now, it appears that the pT is stored in ascending pT order
+  // to avoid the guarantee, just check for lead and sublead as goes along
+  // Make a vector of Jet*, sorted in descending pt
+  vector<Jet*> truth_jets;
   for (JetMap::Iter iter = jetsMC->begin(); iter != jetsMC->end(); ++iter)
   {
     Jet* truthjet = iter->second;
     float pt = truthjet->get_pt();
     float eta = truthjet->get_eta();
-    if  (pt < m_ptRange.first  || pt  > m_ptRange.second
-        || eta < m_etaRange.first || eta > m_etaRange.second) continue;
-      
-    count += 1;
-      
-//    if (iter == jetsMC->begin()) {
-//      leadJet = PseudoJet(truthjet->get_px(),truthjet->get_py(),truthjet->get_pz(),truthjet->get_e());
-//        cout<<0<<" \t "<<count<<endl;
-//    }
-//    else if (iter == jetsMC->find(1)) {
-//      subLeadJet = PseudoJet(truthjet->get_px(),truthjet->get_py(),truthjet->get_pz(),truthjet->get_e());
-//        cout<<1<<" \t "<<count<<endl;
-//    }
-//    else {
-//        PseudoJet tmpJet = PseudoJet(truthjet->get_px(),truthjet->get_py(),truthjet->get_pz(),truthjet->get_e());
-//        rhoJets.push_back(tmpJet);
-//        cout<<2<<" \t "<<count<<endl;
-//    }
-      
-    if (!have_lead) {
-      leadJet = PseudoJet(truthjet->get_px(),truthjet->get_py(),truthjet->get_pz(),truthjet->get_e());
-      have_lead = true;
-    }
-    else if (have_lead && !have_sub) {
-      subLeadJet = PseudoJet(truthjet->get_px(),truthjet->get_py(),truthjet->get_pz(),truthjet->get_e());
-      have_sub = true;
-    }
-//    else {
-//      PseudoJet tmpJet = PseudoJet(truthjet->get_px(),truthjet->get_py(),truthjet->get_pz(),truthjet->get_e());
-//      rhoJets.push_back(tmpJet);
-//    }
-
-    m_truthPt .push_back(pt);
-    m_truthEta.push_back(eta);
-    /* cout << " olives: A2 MC " << truthjet->get_eta() << endl; */
-    m_truthPhi.push_back(truthjet->get_phi());
-    m_truthE  .push_back(truthjet->get_e());
+    if  (pt < m_ptRange.first  
+        || pt  > m_ptRange.second 
+        || eta < m_etaRange.first 
+        || eta > m_etaRange.second) continue;
+    truth_jets.push_back(truthjet);
   }
-  m_T->Fill();
+  std::sort(truth_jets.begin(), truth_jets.end(), [](Jet* a, Jet* b) { return a->get_pt() > b->get_pt(); });
+
+
+  Jet* leadJet    = (truth_jets.size()>0 ? truth_jets[0] : nullptr);
+  Jet* subLeadJet = (truth_jets.size()>1 ? truth_jets[1] : nullptr);
+  for (auto jet : truth_jets) {
+    m_truthPt .push_back(jet->get_pt());
+    m_truthEta.push_back(jet->get_eta());
+    /* cout << " olives: A2 MC " << truthjet->get_eta() << endl; */
+    m_truthPhi.push_back(jet->get_phi());
+    m_truthE  .push_back(jet->get_e());
+  }
+
+  if (false) cout << leadJet->get_pt() << " " << subLeadJet->get_pt() << endl;
     
   JetDefinition jet_def(cambridge_algorithm, 0.4);     //  JET DEFINITION
-    
-  Selector leadCircle = SelectorCircle(0.4);
-  if(have_lead) { leadCircle.set_reference(leadJet); }
-  Selector subCircle = SelectorCircle(0.4);
-  if(have_sub) { subCircle.set_reference(subLeadJet); }
-  Selector bgRapRange = SelectorRapRange( -0.6, 0.6 );
-  Selector bgSelector = bgRapRange && !leadCircle && !subCircle;
-  double ghost_maxrap = 1.0;
-  AreaDefinition area_def(active_area, GhostedAreaSpec(ghost_maxrap));
-  JetMedianBackgroundEstimator UE( bgSelector, jet_def, area_def);
-  UE.set_jets(pseudojets);
-  cout<<UE.rho()<<endl;
-    
+
+  /* Selector leadCircle = SelectorCircle(0.4); */
+  /* if(have_lead) { leadCircle.set_reference(leadJet); } */
+  /* Selector subCircle = SelectorCircle(0.4); */
+  /* if(have_sub) { subCircle.set_reference(subLeadJet); } */
+  /* Selector bgRapRange = SelectorRapRange( -0.6, 0.6 ); */
+  /* Selector bgSelector = bgRapRange && !leadCircle && !subCircle; */
+  /* double ghost_maxrap = 4.0; */
+
+  /* Selector bgRapRange = SelectorRapRange( -0.6, 0.6 ); */
+  /* Selector bgSelector = bgRapRange && !leadCircle && !subCircle; */
+  const double ghost_max_rap { 4.0 };
+  const double ghost_R = 0.01;
+  const double jet_R = 0.4;
+  AreaDefinition area_def_bkgd( active_area_explicit_ghosts, GhostedAreaSpec(ghost_max_rap, 1, ghost_R));
+  JetDefinition jet_def_bkgd(cambridge_algorithm, jet_R); // <--
+  Selector selector_rm2 = SelectorAbsEtaMax(0.6) * (!SelectorNHardest(2)); // <--
+  fastjet::JetMedianBackgroundEstimator bge_rm2 {selector_rm2, jet_def_bkgd, area_def_bkgd};
+  bge_rm2.set_particles(particles_pseudojets);
+
+  m_rho = bge_rm2.rho();
+  m_rho_sigma = bge_rm2.sigma();
+  /* cout << " got: " << rho << " " << rho_sigma << endl; */
+
+
+  // cluster the measured jets:
+  double max_rap = 1.6;
+  fastjet::Selector jetrap         = fastjet::SelectorAbsEtaMax(0.6);
+  fastjet::Selector not_pure_ghost = !SelectorIsPureGhost();
+  fastjet::Selector selection      = jetrap && not_pure_ghost;
+  AreaDefinition area_def( active_area_explicit_ghosts, GhostedAreaSpec(max_rap, 1, ghost_R));
+  JetDefinition jet_def_antikt(antikt_algorithm, jet_R);
+  fastjet::ClusterSequenceArea clustSeq(particles_pseudojets, jet_def_antikt, area_def);
+  vector<PseudoJet> jets = sorted_by_pt( selection( clustSeq.inclusive_jets(m_ptRange.first) ));
+  for (auto jet : jets) {
+    m_eta  .push_back( jet.eta());
+    m_phi  .push_back( jet.phi_std());
+    m_e    .push_back( jet.E());
+    m_pt   .push_back( jet.pt());
+    m_area .push_back( jet.area());
+  }
+
+  m_T->Fill();
   clear_vectors();
-
-
   return Fun4AllReturnCodes::EVENT_OK;
 }
 
