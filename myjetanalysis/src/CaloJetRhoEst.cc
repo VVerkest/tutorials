@@ -204,18 +204,18 @@ int CaloJetRhoEst::process_event(PHCompositeNode* topNode)
 
 
   //centrality
-  /* CentralityInfo* cent_node = findNode::getClass<CentralityInfo>(topNode, "CentralityInfo"); */
-  /* if (!cent_node) */
-  /* { */
-  /*   std::cout */
-  /*     << "MyJetAnalysis::process_event - Error can not find centrality node " */
-  /*     << std::endl; */
-  /*   exit(-1); */
-  /* } */
+   CentralityInfo* cent_node = findNode::getClass<CentralityInfo>(topNode, "CentralityInfo");
+   if (!cent_node)
+   {
+     std::cout
+       << "MyJetAnalysis::process_event - Error can not find centrality node "
+       << std::endl;
+     exit(-1);
+   }
 
   //get the event centrality/impact parameter from HIJING
-  /* m_centrality  =  cent_node->get_centile(CentralityInfo::PROP::bimp); */
-  /* m_impactparam =  cent_node->get_quantity(CentralityInfo::PROP::bimp); */
+   m_centrality  =  cent_node->get_centile(CentralityInfo::PROP::bimp);
+   m_impactparam =  cent_node->get_quantity(CentralityInfo::PROP::bimp);
 
   //get reco jets
   // cout << " olives A0 " << endl;
@@ -294,9 +294,9 @@ int CaloJetRhoEst::process_event(PHCompositeNode* topNode)
   Selector bgSelector = bgRapRange && !leadCircle && !subCircle;
   double ghost_maxrap = 1.0;
   AreaDefinition area_def(active_area, GhostedAreaSpec(ghost_maxrap));
-  JetMedianBackgroundEstimator UE( bgSelector, jet_def, area_def);
-  UE.set_jets(pseudojets);
-  cout<<UE.rho()<<endl;
+//  JetMedianBackgroundEstimator UE( bgSelector, jet_def, area_def);
+//  UE.set_jets(pseudojets);
+//  cout<<UE.rho()<<endl;
     
   clear_vectors();
 
