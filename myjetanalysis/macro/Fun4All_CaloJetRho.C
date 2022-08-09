@@ -36,7 +36,7 @@ void Fun4All_CaloJetRho(const int nevnt = 19)
     towerjetreco->add_input(new TowerJetInput(Jet::CEMC_TOWER));
     towerjetreco->add_input(new TowerJetInput(Jet::HCALIN_TOWER));
     towerjetreco->add_input(new TowerJetInput(Jet::HCALOUT_TOWER));
-    towerjetreco->add_algo(new  FastJetAlgoSub(Jet::ANTIKT, 0.4, 1), "AntiKt_Tower_r04_Sub1");
+    towerjetreco->add_algo(new  FastJetAlgoSub(Jet::ANTIKT, 0.4, 1), "AntiKt_Tower_r04");
     towerjetreco->set_algo_node("ANTIKT");
     towerjetreco->set_input_node("TOWER");
     towerjetreco->Verbosity(verbosity);
@@ -47,7 +47,7 @@ void Fun4All_CaloJetRho(const int nevnt = 19)
   //  myJetAnalysis->Verbosity(0);
   // change lower pt and eta cut to make them visible using the example
   //  pythia8 file
-  CaloJetRhoEst *myJetAnalysis = new CaloJetRhoEst("AntiKt_Tower_r04_Sub1", "AntiKt_Truth_r04", "myjetanalysis.root");
+  CaloJetRhoEst *myJetAnalysis = new CaloJetRhoEst("AntiKt_Tower_r04", "AntiKt_Truth_r04", "myjetanalysis.root");
   myJetAnalysis->setPtRange(5, 100);
   myJetAnalysis->setEtaRange(-1.1, 1.1);
   myJetAnalysis->add_input(new TowerJetInput(Jet::CEMC_TOWER));
