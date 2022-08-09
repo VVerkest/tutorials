@@ -8,6 +8,11 @@
 #include <fastjet/ClusterSequence.hh>
 #include <fastjet/JetDefinition.hh>
 #include <fastjet/PseudoJet.hh>
+#include "fastjet/ClusterSequenceArea.hh"
+#include "fastjet/AreaDefinition.hh"
+#include "fastjet/Selector.hh"
+#include "fastjet/tools/BackgroundEstimatorBase.hh"
+#include "fastjet/tools/JetMedianBackgroundEstimator.hh"
 
 #include <phool/PHCompositeNode.h>
 #include <phool/getClass.h>
@@ -36,6 +41,7 @@
 #include <stdexcept>
 
 using namespace std;
+using namespace fastjet;
 
 CaloJetRhoEst::CaloJetRhoEst(const std::string& recojetname, const std::string& truthjetname, const std::string& outputfilename)
   : SubsysReco("CaloJetRhoEst_" + recojetname + "_" + truthjetname)
@@ -124,14 +130,14 @@ int CaloJetRhoEst::process_event(PHCompositeNode* topNode)
 {
   /* return Fun4AllReturnCodes::EVENT_OK; // FIXME :: just printing the nodes for now in order to find them */
   /* ++m_id; */
-  /* JetMap* jets = findNode::getClass<JetMap>(topNode, m_recoJetName); */
-  /* if (!jets) */
-  /* { */
-  /*   std::cout */
-  /*     << "MyJetAnalysis::process_event - Error can not find DST Reco JetMap node " */
-  /*     << m_recoJetName << std::endl; */
-  /*   exit(-1); */
-  /* } */
+//  JetMap* jets = findNode::getClass<JetMap>(topNode, m_recoJetName);
+//  if (!jets)
+//  {
+//    std::cout
+//      << "MyJetAnalysis::process_event - Error can not find DST Reco JetMap node "
+//      << m_recoJetName << std::endl;
+//    exit(-1);
+//  }
 
   //interface to truth jets
   JetMap* jetsMC = findNode::getClass<JetMap>(topNode, m_truthJetName);
@@ -212,19 +218,27 @@ int CaloJetRhoEst::process_event(PHCompositeNode* topNode)
   /* m_impactparam =  cent_node->get_quantity(CentralityInfo::PROP::bimp); */
 
   //get reco jets
-  /* cout << " olives A0 " << endl; */
-  /* for (JetMap::Iter iter = jets->begin(); iter != jets->end(); ++iter) */
-  /* { */
-  /*   Jet* jet = iter->second; */
-  /*   float pt = jet->get_pt(); */
-  /*   float eta = jet->get_eta(); */
-  /*   if  (pt < m_ptRange.first  || pt  > m_ptRange.second */
-  /*       || eta < m_etaRange.first || eta > m_etaRange.second) continue; */
-  /*   m_pt.push_back(pt); */
-  /*   m_eta.push_back(eta); */
-  /*   m_phi.push_back(jet->get_phi()); */
-  /*   m_e.push_back(jet->get_e()); */
-  /* } */
+  // cout << " olives A0 " << endl;
+//  for (JetMap::Iter iter = jets->begin(); iter != jets->end(); ++iter)
+//  {
+//    Jet* jet = iter->second;
+//    float pt = jet->get_pt();
+//    float eta = jet->get_eta();
+//    if  (pt < m_ptRange.first  || pt  > m_ptRange.second
+//        || eta < m_etaRange.first || eta > m_etaRange.second) continue;
+//    m_pt.push_back(pt);
+//    m_eta.push_back(eta);
+//    m_phi.push_back(jet->get_phi());
+//    m_e.push_back(jet->get_e());
+//  }
+    
+  PseudoJet leadJet, subLeadJet;
+  vector<PseudoJet> rhoJets;
+    
+  int count = 0;
+  bool have_lead = false;
+  bool have_sub = false;
+
   for (JetMap::Iter iter = jetsMC->begin(); iter != jetsMC->end(); ++iter)
   {
     Jet* truthjet = iter->second;
@@ -232,6 +246,35 @@ int CaloJetRhoEst::process_event(PHCompositeNode* topNode)
     float eta = truthjet->get_eta();
     if  (pt < m_ptRange.first  || pt  > m_ptRange.second
         || eta < m_etaRange.first || eta > m_etaRange.second) continue;
+      
+    count += 1;
+      
+//    if (iter == jetsMC->begin()) {
+//      leadJet = PseudoJet(truthjet->get_px(),truthjet->get_py(),truthjet->get_pz(),truthjet->get_e());
+//        cout<<0<<" \t "<<count<<endl;
+//    }
+//    else if (iter == jetsMC->find(1)) {
+//      subLeadJet = PseudoJet(truthjet->get_px(),truthjet->get_py(),truthjet->get_pz(),truthjet->get_e());
+//        cout<<1<<" \t "<<count<<endl;
+//    }
+//    else {
+//        PseudoJet tmpJet = PseudoJet(truthjet->get_px(),truthjet->get_py(),truthjet->get_pz(),truthjet->get_e());
+//        rhoJets.push_back(tmpJet);
+//        cout<<2<<" \t "<<count<<endl;
+//    }
+      
+    if (!have_lead) {
+      leadJet = PseudoJet(truthjet->get_px(),truthjet->get_py(),truthjet->get_pz(),truthjet->get_e());
+      have_lead = true;
+    }
+    else if (have_lead && !have_sub) {
+      subLeadJet = PseudoJet(truthjet->get_px(),truthjet->get_py(),truthjet->get_pz(),truthjet->get_e());
+      have_sub = true;
+    }
+//    else {
+//      PseudoJet tmpJet = PseudoJet(truthjet->get_px(),truthjet->get_py(),truthjet->get_pz(),truthjet->get_e());
+//      rhoJets.push_back(tmpJet);
+//    }
 
     m_truthPt .push_back(pt);
     m_truthEta.push_back(eta);
@@ -240,6 +283,21 @@ int CaloJetRhoEst::process_event(PHCompositeNode* topNode)
     m_truthE  .push_back(truthjet->get_e());
   }
   m_T->Fill();
+    
+  JetDefinition jet_def(cambridge_algorithm, 0.4);     //  JET DEFINITION
+    
+  Selector leadCircle = SelectorCircle(0.4);
+  if(have_lead) { leadCircle.set_reference(leadJet); }
+  Selector subCircle = SelectorCircle(0.4);
+  if(have_sub) { subCircle.set_reference(subLeadJet); }
+  Selector bgRapRange = SelectorRapRange( -0.6, 0.6 );
+  Selector bgSelector = bgRapRange && !leadCircle && !subCircle;
+  double ghost_maxrap = 1.0;
+  AreaDefinition area_def(active_area, GhostedAreaSpec(ghost_maxrap));
+  JetMedianBackgroundEstimator UE( bgSelector, jet_def, area_def);
+  UE.set_jets(pseudojets);
+  cout<<UE.rho()<<endl;
+    
   clear_vectors();
 
 
