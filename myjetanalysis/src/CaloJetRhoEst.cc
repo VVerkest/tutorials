@@ -23,7 +23,8 @@
 
 #include <centrality/CentralityInfo.h>
 
-#include <g4jets/JetMap.h>
+//#include <g4jets/JetMap.h>
+#include <g4jets/JetMapv1.h>
 #include <g4jets/JetInput.h>
 
 #include <TFile.h>
@@ -241,23 +242,35 @@ int CaloJetRhoEst::process_event(PHCompositeNode* topNode)
 //    m_e.push_back(jet->get_e());
 //  }
     
-  // for now, it appears that the pT is stored in ascending pT order
-  // to avoid the guarantee, just check for lead and sublead as goes along
-  // Make a vector of Jet*, sorted in descending pt
   vector<Jet*> truth_jets;
-  for (JetMap::Iter iter = jetsMC->begin(); iter != jetsMC->end(); ++iter)
-  {
-    Jet* truthjet = iter->second;
-    float pt = truthjet->get_pt();
-    float eta = truthjet->get_eta();
-    if  (pt < m_ptRange.first  
-        || pt  > m_ptRange.second 
-        || eta < m_etaRange.first 
-        || eta > m_etaRange.second) continue;
-    truth_jets.push_back(truthjet);
-  }
-  std::sort(truth_jets.begin(), truth_jets.end(), [](Jet* a, Jet* b) { return a->get_pt() > b->get_pt(); });
-
+    
+    /* // OLD METHOD
+     // manually sort jets by pT
+     // can be removed once the changes to the Jet class
+     for (JetMap::Iter iter = jetsMC->begin(); iter != jetsMC->end(); ++iter)
+     {
+       Jet* truthjet = iter->second;
+       float pt = truthjet->get_pt();
+       float eta = truthjet->get_eta();
+       if  (pt < m_ptRange.first
+           || pt  > m_ptRange.second
+           || eta < m_etaRange.first
+           || eta > m_etaRange.second) continue;
+       truth_jets.push_back(truthjet);
+     }
+     std::sort(truth_jets.begin(), truth_jets.end(), [](Jet* a, Jet* b) { return a->get_pt() > b->get_pt(); });
+    */
+     
+    
+  for (auto& jet : jetsMC->vec(Jet::SORT::PT)) {  // will return jets in order of descending pT
+    float pt = jet->get_pt();
+    float eta = jet->get_eta();
+    if  (pt < m_ptRange.first
+      || pt  > m_ptRange.second
+      || eta < m_etaRange.first
+      || eta > m_etaRange.second) continue;
+      truth_jets.push_back(jet);
+    }
 
   Jet* leadJet    = (truth_jets.size()>0 ? truth_jets[0] : nullptr);
   Jet* subLeadJet = (truth_jets.size()>1 ? truth_jets[1] : nullptr);
@@ -272,23 +285,6 @@ int CaloJetRhoEst::process_event(PHCompositeNode* topNode)
   if (false) cout << leadJet->get_pt() << " " << subLeadJet->get_pt() << endl;
     
   JetDefinition jet_def(cambridge_algorithm, 0.4);     //  JET DEFINITION
-<<<<<<< HEAD
-    
-  Selector leadCircle = SelectorCircle(0.4);
-  if(have_lead) { leadCircle.set_reference(leadJet); }
-  Selector subCircle = SelectorCircle(0.4);
-  if(have_sub) { subCircle.set_reference(subLeadJet); }
-  Selector bgRapRange = SelectorRapRange( -0.6, 0.6 );
-  Selector bgSelector = bgRapRange && !leadCircle && !subCircle;
-  double ghost_maxrap = 1.0;
-  AreaDefinition area_def(active_area, GhostedAreaSpec(ghost_maxrap));
-//  JetMedianBackgroundEstimator UE( bgSelector, jet_def, area_def);
-//  UE.set_jets(pseudojets);
-//  cout<<UE.rho()<<endl;
-    
-  clear_vectors();
-=======
->>>>>>> 91920cd47ce641f43bc91865642ef89a177063d2
 
   /* Selector leadCircle = SelectorCircle(0.4); */
   /* if(have_lead) { leadCircle.set_reference(leadJet); } */
