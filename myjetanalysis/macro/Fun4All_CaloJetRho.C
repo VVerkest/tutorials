@@ -25,14 +25,14 @@ R__LOAD_LIBRARY(libg4jets.so)
 R__LOAD_LIBRARY(libjetbackground.so)
 R__LOAD_LIBRARY(libcalojetrhoest.so)
 
-void Fun4All_CaloJetRho(const int nevnt = 12, const double min_calo_pt=0.02, const char* fout_name="def_CaloJetRho.root")
+void Fun4All_CaloJetRho(const int nevnt = 12, const double min_calo_pt=0.02, 
+    const int verbosity=1,
+    const char* fout_name="out_CaloJetRho.root")
 {
   gSystem->Load("libcalojetrhoest");
   gSystem->Load("libg4dst");
 
   Fun4AllServer *se = Fun4AllServer::instance();
-
-  int verbosity = 1;
 
   if (false) {
     JetReco *towerjetreco = new JetReco();
@@ -52,10 +52,9 @@ void Fun4All_CaloJetRho(const int nevnt = 12, const double min_calo_pt=0.02, con
   cent->GetCalibrationParameters().ReadFromFile("centrality", "xml", 0, 0, string(getenv("CALIBRATIONROOT")) + string("/Centrality/"));
   se->registerSubsystem( cent );
 
-  //  myJetAnalysis->Verbosity(0);
   // change lower pt and eta cut to make them visible using the example
   //  pythia8 file
-  int print_stats_freq = 4;
+  int print_stats_freq = 100;
   CaloJetRhoEst *myJetAnalysis = new CaloJetRhoEst(min_calo_pt, print_stats_freq, "AntiKt_Tower_r04", "AntiKt_Truth_r04", fout_name);
   myJetAnalysis->setPtRange(5, 100);
   myJetAnalysis->setEtaRange(-1.1, 1.1);
@@ -92,6 +91,7 @@ void Fun4All_CaloJetRho(const int nevnt = 12, const double min_calo_pt=0.02, con
   /* inbbc->AddListFile("dst_bbc_g4hit.list",1); */
   /* se->registerInputManager(inbbc); */
 
+  myJetAnalysis->Verbosity(verbosity);
   se->run(nevnt);
   se->End();
   delete se;

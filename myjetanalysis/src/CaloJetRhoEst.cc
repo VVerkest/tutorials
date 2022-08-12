@@ -74,7 +74,8 @@ CaloJetRhoEst::CaloJetRhoEst(
   , m_TruthJetArea {}
   , _inputs        {}
   , print_stats{n_print_freq}
-{ }
+{ 
+}
 
 CaloJetRhoEst::~CaloJetRhoEst()
 { 
@@ -141,6 +142,7 @@ int CaloJetRhoEst::InitRun(PHCompositeNode* topNode)
 
 int CaloJetRhoEst::process_event(PHCompositeNode* topNode)
 {
+  /* cout << "Verbosity: " << Verbosity() << endl; */
   // statistics on how the program is doing
   print_stats.call();
   //interface to truth jets
@@ -203,6 +205,7 @@ int CaloJetRhoEst::process_event(PHCompositeNode* topNode)
       particles_pseudojets.push_back(pseudojet);
     }
   }
+  for (auto &p : particles) delete p;
 
   //centrality
    CentralityInfo* cent_node = findNode::getClass<CentralityInfo>(topNode, "CentralityInfo");
@@ -218,35 +221,22 @@ int CaloJetRhoEst::process_event(PHCompositeNode* topNode)
    m_centrality  =  cent_node->get_centile(CentralityInfo::PROP::bimp);
    m_impactparam =  cent_node->get_quantity(CentralityInfo::PROP::bimp);
 
-  //get reco jets
-  // cout << " olives A0 " << endl;
-//  for (JetMap::Iter iter = jets->begin(); iter != jets->end(); ++iter)
-//  {
-//    Jet* jet = iter->second;
-//    float pt = jet->get_pt();
-//    float eta = jet->get_eta();
-//    if  (pt < m_ptRange.first  || pt  > m_ptRange.second
-//        || eta < m_etaRange.first || eta > m_etaRange.second) continue;
-//    m_CaloJetPt.push_back(pt);
-//    m_CaloJetEta.push_back(eta);
-//    m_CaloJetPhi.push_back(jet->get_phi());
-//    m_CaloJetE.push_back(jet->get_e());
-//  }
-    
   vector<Jet*> truth_jets;
-    
   for (auto& jet : jetsMC->vec(Jet::SORT::PT)) {  // will return jets in order of descending pT
     float pt  = jet->get_pt();
     float eta = jet->get_eta();
     if  (pt < m_ptRange.first
-      || pt  > m_ptRange.second
-      || eta < m_etaRange.first
-      || eta > m_etaRange.second) continue;
-      truth_jets.push_back(jet);
-    }
+        || pt  > m_ptRange.second
+        || eta < m_etaRange.first
+        || eta > m_etaRange.second) continue;
+    truth_jets.push_back(jet);
+  }
 
   Jet* leadJet    = (truth_jets.size()>0 ? truth_jets[0] : nullptr);
   Jet* subLeadJet = (truth_jets.size()>1 ? truth_jets[1] : nullptr);
+  if (false) cout << leadJet->get_pt() << " " << subLeadJet->get_pt() << endl;
+
+
   for (auto jet : truth_jets) {
     m_TruthJetPt .push_back(jet->get_pt());
     m_TruthJetEta.push_back(jet->get_eta());
@@ -255,8 +245,7 @@ int CaloJetRhoEst::process_event(PHCompositeNode* topNode)
     m_TruthJetE  .push_back(jet->get_e());
   }
 
-  if (false) cout << leadJet->get_pt() << " " << subLeadJet->get_pt() << endl;
-    
+  if (Verbosity()>5) cout << "Starting background density calc" << endl;
   JetDefinition jet_def(cambridge_algorithm, 0.4);     //  JET DEFINITION
 
   const double ghost_max_rap { 2.0 };
@@ -270,9 +259,8 @@ int CaloJetRhoEst::process_event(PHCompositeNode* topNode)
 
   m_rho = bge_rm2.rho();
   m_rho_sigma = bge_rm2.sigma();
-  /* cout << " got: " << rho << " " << rho_sigma << endl; */
 
-
+  if (Verbosity()>5) cout << "Starting clustered jets" << endl;
   // cluster the measured jets:
   double max_rap = 2.0;
   fastjet::Selector jetrap         = fastjet::SelectorAbsEtaMax(0.6);
@@ -293,16 +281,8 @@ int CaloJetRhoEst::process_event(PHCompositeNode* topNode)
   m_T->Fill();
   clear_vectors();
 
-  auto leak = new TString("this is a leak!");
-  if (false) cout << " leak: " << leak << endl;
-  TH2D* hg = new TH2D("leaky_hg","a;b;c",1000,0.,1.,1000,0.,1.);
-  TRandom3* _rand = new TRandom3();
-  for (int i=0;i<1000;++i) {
-    hg->Fill(_rand->Gaus(0.5,0.1),_rand->Gaus(0.5,0.1));
-  }
   return Fun4AllReturnCodes::EVENT_OK;
 }
-
 
 void CaloJetRhoEst::clear_vectors() {
   m_CaloJetEta.clear();
@@ -310,7 +290,6 @@ void CaloJetRhoEst::clear_vectors() {
   m_CaloJetE.clear();
   m_CaloJetPt.clear();
   m_CaloJetArea.clear();
-
   
   m_TruthJetEta.clear();
   m_TruthJetPhi.clear();
