@@ -25,7 +25,7 @@ R__LOAD_LIBRARY(libg4jets.so)
 R__LOAD_LIBRARY(libjetbackground.so)
 R__LOAD_LIBRARY(libcalojetrhoest.so)
 
-void Fun4All_CaloJetRho(const int nevnt = 12, const double min_calo_pt=0.02, const char* fout_name="test.root")
+void Fun4All_CaloJetRho(const int nevnt = 12, const double min_calo_pt=0.02, const char* fout_name="def_CaloJetRho.root")
 {
   gSystem->Load("libcalojetrhoest");
   gSystem->Load("libg4dst");

@@ -60,17 +60,17 @@ CaloJetRhoEst::CaloJetRhoEst(
   , m_ptRange  (5,  100)
   , m_T  (nullptr)
   , m_id (-1)
-  , m_eta       {}
-  , m_phi       {}
-  , m_e         {}
-  , m_pt        {}
-  , m_area      {}
-  , m_truthEta  {}
-  , m_truthPhi  {}
-  , m_truthE    {}
-  , m_truthPt   {}
-  , m_truthArea {}
-  , _inputs {}
+  , m_CaloJetEta   {}
+  , m_CaloJetPhi   {}
+  , m_CaloJetE     {}
+  , m_CaloJetPt    {}
+  , m_CaloJetArea  {}
+  , m_TruthJetEta  {}
+  , m_TruthJetPhi  {}
+  , m_TruthJetE    {}
+  , m_TruthJetPt   {}
+  , m_TruthJetArea {}
+  , _inputs        {}
   , print_stats{n_print_freq}
 { }
 
@@ -100,18 +100,18 @@ int CaloJetRhoEst::Init(PHCompositeNode* topNode)
   m_T->Branch("centrality",  &m_centrality);
   m_T->Branch("impactparam", &m_impactparam);
 
-  m_T->Branch("CaloJetEta",    &m_eta);
-  m_T->Branch("CaloJetPhi",    &m_phi);
-  m_T->Branch("CaloJetE",      &m_e);
-  m_T->Branch("CaloJetPt",     &m_pt);
-  m_T->Branch("CaloJetArea",   &m_area);
+  m_T->Branch("CaloJetEta",    &m_CaloJetEta);
+  m_T->Branch("CaloJetPhi",    &m_CaloJetPhi);
+  m_T->Branch("CaloJetE",      &m_CaloJetE);
+  m_T->Branch("CaloJetPt",     &m_CaloJetPt);
+  m_T->Branch("CaloJetArea",   &m_CaloJetArea);
 
   //Truth Jets
-  m_T->Branch("TruthJetEta",  &m_truthEta);
-  m_T->Branch("TruthJetPhi",  &m_truthPhi);
-  m_T->Branch("TruthJetE",    &m_truthE);
-  m_T->Branch("TruthJetPt",   &m_truthPt);
-  m_T->Branch("TruthJetArea", &m_truthArea);
+  m_T->Branch("TruthJetEta",  &m_TruthJetEta);
+  m_T->Branch("TruthJetPhi",  &m_TruthJetPhi);
+  m_T->Branch("TruthJetE",    &m_TruthJetE);
+  m_T->Branch("TruthJetPt",   &m_TruthJetPt);
+  m_T->Branch("TruthJetArea", &m_TruthJetArea);
 
   return Fun4AllReturnCodes::EVENT_OK;
 }
@@ -131,8 +131,6 @@ int CaloJetRhoEst::End(PHCompositeNode* topNode)
 
 int CaloJetRhoEst::InitRun(PHCompositeNode* topNode)
 {
-  /* m_jetEvalStack = shared_ptr<JetEvalStack>(new JetEvalStack(topNode, m_recoJetName, m_truthJetName)); */
-  /* m_jetEvalStack->get_stvx_eval_stack()->set_use_initial_vertex(initial_vertex); */
   topNode->print();
   cout << " Input Selections:" << endl;
   for (unsigned int i = 0; i < _inputs.size(); ++i) _inputs[i]->identify();
@@ -197,7 +195,7 @@ int CaloJetRhoEst::process_event(PHCompositeNode* topNode)
 
     float _pt = pseudojet.perp();
     if (_pt < min_calo_pt) {
-      cout << " CUT SMALL: " << _pt << " < " << min_calo_pt << endl;
+      /* cout << " CUT SMALL: " << _pt << " < " << min_calo_pt << endl; */
       ++smallptcutcnt;
     } else {
       particles_pseudojets.push_back(pseudojet);
@@ -227,16 +225,16 @@ int CaloJetRhoEst::process_event(PHCompositeNode* topNode)
 //    float eta = jet->get_eta();
 //    if  (pt < m_ptRange.first  || pt  > m_ptRange.second
 //        || eta < m_etaRange.first || eta > m_etaRange.second) continue;
-//    m_pt.push_back(pt);
-//    m_eta.push_back(eta);
-//    m_phi.push_back(jet->get_phi());
-//    m_e.push_back(jet->get_e());
+//    m_CaloJetPt.push_back(pt);
+//    m_CaloJetEta.push_back(eta);
+//    m_CaloJetPhi.push_back(jet->get_phi());
+//    m_CaloJetE.push_back(jet->get_e());
 //  }
     
   vector<Jet*> truth_jets;
     
   for (auto& jet : jetsMC->vec(Jet::SORT::PT)) {  // will return jets in order of descending pT
-    float pt = jet->get_pt();
+    float pt  = jet->get_pt();
     float eta = jet->get_eta();
     if  (pt < m_ptRange.first
       || pt  > m_ptRange.second
@@ -248,28 +246,18 @@ int CaloJetRhoEst::process_event(PHCompositeNode* topNode)
   Jet* leadJet    = (truth_jets.size()>0 ? truth_jets[0] : nullptr);
   Jet* subLeadJet = (truth_jets.size()>1 ? truth_jets[1] : nullptr);
   for (auto jet : truth_jets) {
-    m_truthPt .push_back(jet->get_pt());
-    m_truthEta.push_back(jet->get_eta());
+    m_TruthJetPt .push_back(jet->get_pt());
+    m_TruthJetEta.push_back(jet->get_eta());
     /* cout << " olives: A2 MC " << truthjet->get_eta() << endl; */
-    m_truthPhi.push_back(jet->get_phi());
-    m_truthE  .push_back(jet->get_e());
+    m_TruthJetPhi.push_back(jet->get_phi());
+    m_TruthJetE  .push_back(jet->get_e());
   }
 
   if (false) cout << leadJet->get_pt() << " " << subLeadJet->get_pt() << endl;
     
   JetDefinition jet_def(cambridge_algorithm, 0.4);     //  JET DEFINITION
 
-  /* Selector leadCircle = SelectorCircle(0.4); */
-  /* if(have_lead) { leadCircle.set_reference(leadJet); } */
-  /* Selector subCircle = SelectorCircle(0.4); */
-  /* if(have_sub) { subCircle.set_reference(subLeadJet); } */
-  /* Selector bgRapRange = SelectorRapRange( -0.6, 0.6 ); */
-  /* Selector bgSelector = bgRapRange && !leadCircle && !subCircle; */
-  /* double ghost_maxrap = 4.0; */
-
-  /* Selector bgRapRange = SelectorRapRange( -0.6, 0.6 ); */
-  /* Selector bgSelector = bgRapRange && !leadCircle && !subCircle; */
-  const double ghost_max_rap { 4.0 };
+  const double ghost_max_rap { 2.0 };
   const double ghost_R = 0.01;
   const double jet_R = 0.4;
   AreaDefinition area_def_bkgd( active_area_explicit_ghosts, GhostedAreaSpec(ghost_max_rap, 1, ghost_R));
@@ -284,7 +272,7 @@ int CaloJetRhoEst::process_event(PHCompositeNode* topNode)
 
 
   // cluster the measured jets:
-  double max_rap = 1.6;
+  double max_rap = 2.0;
   fastjet::Selector jetrap         = fastjet::SelectorAbsEtaMax(0.6);
   fastjet::Selector not_pure_ghost = !SelectorIsPureGhost();
   fastjet::Selector selection      = jetrap && not_pure_ghost;
@@ -293,11 +281,11 @@ int CaloJetRhoEst::process_event(PHCompositeNode* topNode)
   fastjet::ClusterSequenceArea clustSeq(particles_pseudojets, jet_def_antikt, area_def);
   vector<PseudoJet> jets = sorted_by_pt( selection( clustSeq.inclusive_jets(m_ptRange.first) ));
   for (auto jet : jets) {
-    m_eta  .push_back( jet.eta());
-    m_phi  .push_back( jet.phi_std());
-    m_e    .push_back( jet.E());
-    m_pt   .push_back( jet.pt());
-    m_area .push_back( jet.area());
+    m_CaloJetEta  .push_back( jet.eta());
+    m_CaloJetPhi  .push_back( jet.phi_std());
+    m_CaloJetE    .push_back( jet.E());
+    m_CaloJetPt   .push_back( jet.pt());
+    m_CaloJetArea .push_back( jet.area());
   }
 
   m_T->Fill();
@@ -307,16 +295,16 @@ int CaloJetRhoEst::process_event(PHCompositeNode* topNode)
 
 
 void CaloJetRhoEst::clear_vectors() {
-  m_eta.clear();
-  m_phi.clear();
-  m_e.clear();
-  m_pt.clear();
-  m_area.clear();
+  m_CaloJetEta.clear();
+  m_CaloJetPhi.clear();
+  m_CaloJetE.clear();
+  m_CaloJetPt.clear();
+  m_CaloJetArea.clear();
 
   
-  m_truthEta.clear();
-  m_truthPhi.clear();
-  m_truthE.clear();
-  m_truthPt.clear();
-  m_truthArea.clear();
+  m_TruthJetEta.clear();
+  m_TruthJetPhi.clear();
+  m_TruthJetE.clear();
+  m_TruthJetPt.clear();
+  m_TruthJetArea.clear();
 }

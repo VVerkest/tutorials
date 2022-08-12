@@ -73,18 +73,18 @@ class CaloJetRhoEst : public SubsysReco
   float m_impactparam;
 
   //Calo Jets
-  std::vector<float> m_eta;
-  std::vector<float> m_phi;
-  std::vector<float> m_e;
-  std::vector<float> m_pt;
-  std::vector<float> m_area;
+  std::vector<float> m_CaloJetEta;
+  std::vector<float> m_CaloJetPhi;
+  std::vector<float> m_CaloJetE;
+  std::vector<float> m_CaloJetPt;
+  std::vector<float> m_CaloJetArea;
 
   //Truth Jets
-  std::vector<float> m_truthEta;
-  std::vector<float> m_truthPhi;
-  std::vector<float> m_truthE;
-  std::vector<float> m_truthPt;
-  std::vector<float> m_truthArea;
+  std::vector<float> m_TruthJetEta;
+  std::vector<float> m_TruthJetPhi;
+  std::vector<float> m_TruthJetE;
+  std::vector<float> m_TruthJetPt;
+  std::vector<float> m_TruthJetArea;
 
   std::vector<JetInput *> _inputs; // copied from /direct/sphenix+u/dstewart/vv/coresoftware/simulation/g4simulation/g4jets/JetReco.h .cc
   MemTimeProgression print_stats;
