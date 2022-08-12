@@ -17,28 +17,27 @@ class TTree;
 class TH1;
 class JetInput;
 
-/// \class CaloJetRhoEst
 class CaloJetRhoEst : public SubsysReco
 {
  public:
   CaloJetRhoEst(
-      const int      n_print_freq       = 10,
+      double min_calo_pt            = 0.02,
+      const  int n_print_freq           = 10,
       const std::string &recojetname    = "AntiKt_Tower_r04",
       const std::string &truthjetname   = "AntiKt_Truth_r04",
       const std::string &outputfilename = "CaloJetRhoEst.root");
 
+  double min_calo_pt;
   virtual ~CaloJetRhoEst();
 
   //! set eta range
-  void
-  setEtaRange(double low, double high)
+  void setEtaRange(double low, double high)
   {
     m_etaRange.first  = low;
     m_etaRange.second = high;
   }
   //! set eta range
-  void
-  setPtRange(double low, double high)
+  void setPtRange(double low, double high)
   {
     m_ptRange.first  = low;
     m_ptRange.second = high;

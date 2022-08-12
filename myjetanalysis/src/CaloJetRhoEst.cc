@@ -45,12 +45,14 @@ using namespace std;
 using namespace fastjet;
 
 CaloJetRhoEst::CaloJetRhoEst(
+      const double _min_calo_pt,
       const int n_print_freq,
       const std::string& recojetname,
       const std::string& truthjetname,
       const std::string& outputfilename
     )
   : SubsysReco("CaloJetRhoEst_" + recojetname + "_" + truthjetname)
+  , min_calo_pt {_min_calo_pt}
   , m_recoJetName(recojetname)
   , m_truthJetName(truthjetname)
   , m_outputFileName(outputfilename)
@@ -92,24 +94,24 @@ int CaloJetRhoEst::Init(PHCompositeNode* topNode)
   m_T = new TTree("T", "CaloJetRhoEst Tree");
 
   //      int m_event;
-  m_T->Branch("m_id",          &m_id);
-  m_T->Branch("m_rho",         &m_rho);
-  m_T->Branch("m_rho_sigma",   &m_rho_sigma);
-  m_T->Branch("m_centrality",  &m_centrality);
-  m_T->Branch("m_impactparam", &m_impactparam);
+  m_T->Branch("id",          &m_id);
+  m_T->Branch("rho",         &m_rho);
+  m_T->Branch("rho_sigma",   &m_rho_sigma);
+  m_T->Branch("centrality",  &m_centrality);
+  m_T->Branch("impactparam", &m_impactparam);
 
-  m_T->Branch("m_rawEta",    &m_eta);
-  m_T->Branch("m_rawPhi",    &m_phi);
-  m_T->Branch("m_rawE",      &m_e);
-  m_T->Branch("m_rawPt",     &m_pt);
-  m_T->Branch("m_rawArea",   &m_area);
+  m_T->Branch("CaloJetEta",    &m_eta);
+  m_T->Branch("CaloJetPhi",    &m_phi);
+  m_T->Branch("CaloJetE",      &m_e);
+  m_T->Branch("CaloJetPt",     &m_pt);
+  m_T->Branch("CaloJetArea",   &m_area);
 
   //Truth Jets
-  m_T->Branch("m_truthEta",  &m_truthEta);
-  m_T->Branch("m_truthPhi",  &m_truthPhi);
-  m_T->Branch("m_truthE",    &m_truthE);
-  m_T->Branch("m_truthPt",   &m_truthPt);
-  m_T->Branch("m_truthArea", &m_truthArea);
+  m_T->Branch("TruthJetEta",  &m_truthEta);
+  m_T->Branch("TruthJetPhi",  &m_truthPhi);
+  m_T->Branch("TruthJetE",    &m_truthE);
+  m_T->Branch("TruthJetPt",   &m_truthPt);
+  m_T->Branch("TruthJetArea", &m_truthArea);
 
   return Fun4AllReturnCodes::EVENT_OK;
 }
@@ -194,8 +196,8 @@ int CaloJetRhoEst::process_event(PHCompositeNode* topNode)
     pseudojet.set_user_index(ipart);
 
     float _pt = pseudojet.perp();
-    if (_pt < 0.002) {
-      /* cout << " CUT SMALL: " << _pt << endl; */
+    if (_pt < min_calo_pt) {
+      cout << " CUT SMALL: " << _pt << " < " << min_calo_pt << endl;
       ++smallptcutcnt;
     } else {
       particles_pseudojets.push_back(pseudojet);
