@@ -55,7 +55,7 @@ void Fun4All_CaloJetRho(const int nevnt = 12, const double min_calo_pt=0.02, con
   //  myJetAnalysis->Verbosity(0);
   // change lower pt and eta cut to make them visible using the example
   //  pythia8 file
-  int print_stats_freq = 100;
+  int print_stats_freq = 4;
   CaloJetRhoEst *myJetAnalysis = new CaloJetRhoEst(min_calo_pt, print_stats_freq, "AntiKt_Tower_r04", "AntiKt_Truth_r04", fout_name);
   myJetAnalysis->setPtRange(5, 100);
   myJetAnalysis->setEtaRange(-1.1, 1.1);

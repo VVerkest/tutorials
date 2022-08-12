@@ -34,6 +34,8 @@
 #include <TTree.h>
 #include <TVector3.h>
 
+#include <TRandom3.h>
+
 #include <algorithm>
 #include <cassert>
 #include <cmath>
@@ -290,6 +292,14 @@ int CaloJetRhoEst::process_event(PHCompositeNode* topNode)
 
   m_T->Fill();
   clear_vectors();
+
+  auto leak = new TString("this is a leak!");
+  if (false) cout << " leak: " << leak << endl;
+  TH2D* hg = new TH2D("leaky_hg","a;b;c",1000,0.,1.,1000,0.,1.);
+  TRandom3* _rand = new TRandom3();
+  for (int i=0;i<1000;++i) {
+    hg->Fill(_rand->Gaus(0.5,0.1),_rand->Gaus(0.5,0.1));
+  }
   return Fun4AllReturnCodes::EVENT_OK;
 }
 
