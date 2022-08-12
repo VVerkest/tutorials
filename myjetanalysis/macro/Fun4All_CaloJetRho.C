@@ -25,7 +25,7 @@ R__LOAD_LIBRARY(libg4jets.so)
 R__LOAD_LIBRARY(libjetbackground.so)
 R__LOAD_LIBRARY(libcalojetrhoest.so)
 
-void Fun4All_CaloJetRho(const int nevnt = 19)
+void Fun4All_CaloJetRho(const int nevnt = 12)
 {
   gSystem->Load("libcalojetrhoest");
   gSystem->Load("libg4dst");
@@ -55,7 +55,8 @@ void Fun4All_CaloJetRho(const int nevnt = 19)
   //  myJetAnalysis->Verbosity(0);
   // change lower pt and eta cut to make them visible using the example
   //  pythia8 file
-  CaloJetRhoEst *myJetAnalysis = new CaloJetRhoEst("AntiKt_Tower_r04", "AntiKt_Truth_r04", "myjetanalysis.root");
+  int print_stats_freq = 100;
+  CaloJetRhoEst *myJetAnalysis = new CaloJetRhoEst(print_stats_freq, "AntiKt_Tower_r04", "AntiKt_Truth_r04", "myjetanalysis.root");
   myJetAnalysis->setPtRange(5, 100);
   myJetAnalysis->setEtaRange(-1.1, 1.1);
   myJetAnalysis->add_input(new TowerJetInput(Jet::CEMC_TOWER));
@@ -87,9 +88,9 @@ void Fun4All_CaloJetRho(const int nevnt = 19)
   invertex->AddListFile("dst_vertex.list",1);
   se->registerInputManager(invertex);
     
-  Fun4AllInputManager *inbbc = new Fun4AllDstInputManager("DSTbbc");
-  inbbc->AddListFile("dst_bbc_g4hit.list",1);
-  se->registerInputManager(inbbc);
+  /* Fun4AllInputManager *inbbc = new Fun4AllDstInputManager("DSTbbc"); */
+  /* inbbc->AddListFile("dst_bbc_g4hit.list",1); */
+  /* se->registerInputManager(inbbc); */
 
   se->run(nevnt);
   se->End();

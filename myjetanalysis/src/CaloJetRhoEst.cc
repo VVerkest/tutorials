@@ -44,7 +44,12 @@
 using namespace std;
 using namespace fastjet;
 
-CaloJetRhoEst::CaloJetRhoEst(const std::string& recojetname, const std::string& truthjetname, const std::string& outputfilename)
+CaloJetRhoEst::CaloJetRhoEst(
+      const int n_print_freq,
+      const std::string& recojetname,
+      const std::string& truthjetname,
+      const std::string& outputfilename
+    )
   : SubsysReco("CaloJetRhoEst_" + recojetname + "_" + truthjetname)
   , m_recoJetName(recojetname)
   , m_truthJetName(truthjetname)
@@ -64,12 +69,16 @@ CaloJetRhoEst::CaloJetRhoEst(const std::string& recojetname, const std::string& 
   , m_truthPt   {}
   , m_truthArea {}
   , _inputs {}
+  , print_stats{n_print_freq}
 { }
 
 CaloJetRhoEst::~CaloJetRhoEst()
 { 
   for (unsigned int i = 0; i < _inputs.size(); ++i) delete _inputs[i];
   _inputs.clear();
+    print_stats.set_get_stats();
+   cout << " Max memory used: " << print_stats.max_mem/1000. << " MB " << endl;
+
 }
 
 int CaloJetRhoEst::Init(PHCompositeNode* topNode)
@@ -130,17 +139,8 @@ int CaloJetRhoEst::InitRun(PHCompositeNode* topNode)
 
 int CaloJetRhoEst::process_event(PHCompositeNode* topNode)
 {
-  /* return Fun4AllReturnCodes::EVENT_OK; // FIXME :: just printing the nodes for now in order to find them */
-  /* ++m_id; */
-//  JetMap* jets = findNode::getClass<JetMap>(topNode, m_recoJetName);
-//  if (!jets)
-//  {
-//    std::cout
-//      << "MyJetAnalysis::process_event - Error can not find DST Reco JetMap node "
-//      << m_recoJetName << std::endl;
-//    exit(-1);
-//  }
-
+  // statistics on how the program is doing
+  print_stats.call();
   //interface to truth jets
   JetMap* jetsMC = findNode::getClass<JetMap>(topNode, m_truthJetName);
   if (!jetsMC )
@@ -163,11 +163,7 @@ int CaloJetRhoEst::process_event(PHCompositeNode* topNode)
     }
   }
 
-  // now make pseudojet particles 
-  //      (as in from /direct/sphenix+u/dstewart/vv/coresoftware/simulation/g4simulation/g4jets/JetReco.cc ::94 ->
-  //                  /direct/sphenix+u/dstewart/vv/coresoftware/offline/packages/jetbackground/FastJetAlgoSub.h :: get_jets
   auto& particles=inputs;
-  /* cout << " particles: " << particles.size() << endl; */
 
   // /direct/sphenix+u/dstewart/vv/coresoftware/offline/packages/jetbackground/FastJetAlgoSub.cc ::58
   std::vector<fastjet::PseudoJet> particles_pseudojets;
@@ -191,13 +187,6 @@ int CaloJetRhoEst::process_event(PHCompositeNode* topNode)
       this_px = this_px * e_ratio;
       this_py = this_py * e_ratio;
       this_pz = this_pz * e_ratio;
-
-      /* if (_verbosity > 5) */
-      /* { */
-      /*   std::cout << " FastJetAlgoSub input particle with negative-E, original kinematics px / py / pz / E = "; */
-      /*   std::cout << particles[ipart]->get_px() << " / " << particles[ipart]->get_py() << " / " << particles[ipart]->get_pz() << " / " << particles[ipart]->get_e() << std::endl; */
-      /*   std::cout << " --> entering with modified kinematics px / py / pz / E = " << this_px << " / " << this_py << " / " << this_pz << " / " << this_e << std::endl; */
-      /* } */
     }
 
     fastjet::PseudoJet pseudojet(this_px, this_py, this_pz, this_e);
@@ -243,24 +232,6 @@ int CaloJetRhoEst::process_event(PHCompositeNode* topNode)
 //  }
     
   vector<Jet*> truth_jets;
-    
-    /* // OLD METHOD
-     // manually sort jets by pT
-     // can be removed once the changes to the Jet class
-     for (JetMap::Iter iter = jetsMC->begin(); iter != jetsMC->end(); ++iter)
-     {
-       Jet* truthjet = iter->second;
-       float pt = truthjet->get_pt();
-       float eta = truthjet->get_eta();
-       if  (pt < m_ptRange.first
-           || pt  > m_ptRange.second
-           || eta < m_etaRange.first
-           || eta > m_etaRange.second) continue;
-       truth_jets.push_back(truthjet);
-     }
-     std::sort(truth_jets.begin(), truth_jets.end(), [](Jet* a, Jet* b) { return a->get_pt() > b->get_pt(); });
-    */
-     
     
   for (auto& jet : jetsMC->vec(Jet::SORT::PT)) {  // will return jets in order of descending pT
     float pt = jet->get_pt();

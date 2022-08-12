@@ -2,6 +2,7 @@
 #define CALOJETRHOEST_H
 
 #include <fun4all/SubsysReco.h>
+#include "MemTimeProgression.h"
 
 #include <memory>
 #include <string>
@@ -21,8 +22,9 @@ class CaloJetRhoEst : public SubsysReco
 {
  public:
   CaloJetRhoEst(
-      const std::string &recojetname = "AntiKt_Tower_r04",
-      const std::string &truthjetname = "AntiKt_Truth_r04",
+      const int      n_print_freq       = 10,
+      const std::string &recojetname    = "AntiKt_Tower_r04",
+      const std::string &truthjetname   = "AntiKt_Truth_r04",
       const std::string &outputfilename = "CaloJetRhoEst.root");
 
   virtual ~CaloJetRhoEst();
@@ -86,6 +88,7 @@ class CaloJetRhoEst : public SubsysReco
   std::vector<float> m_truthArea;
 
   std::vector<JetInput *> _inputs; // copied from /direct/sphenix+u/dstewart/vv/coresoftware/simulation/g4simulation/g4jets/JetReco.h .cc
+  MemTimeProgression print_stats;
 };
 
 #endif  // CALOJETRHOEST_H_H

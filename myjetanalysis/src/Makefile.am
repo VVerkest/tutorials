@@ -19,11 +19,12 @@ libcalojetrhoest_la_LIBADD = \
   -lg4eval
 
 libcalojetrhoest_la_SOURCES = \
-  CaloJetRhoEst.cc
+  CaloJetRhoEst.cc \
+	MemTimeProgression.cc 
 
 pkginclude_HEADERS = \
-  CaloJetRhoEst.h
-
+  CaloJetRhoEst.h \
+	MemTimeProgression.h 
 
 ################################################
 # linking tests
