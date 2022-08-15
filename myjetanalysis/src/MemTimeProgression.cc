@@ -4,6 +4,7 @@
 #include "stdio.h"
 #include <string>
 #include <iostream>
+#include <iomanip>
 #include "TString.h"
 
 /* ClassImp(MemTimeProgression) */
@@ -33,13 +34,14 @@ int getMemValue(){ //Note: this value is in KB!
     return result;
 };
 
-MemTimeProgression::MemTimeProgression(int print_int) :
+MemTimeProgression::MemTimeProgression(const int print_int, const int _n_total_calls) :
     nCalls   {0},
     mem0     {0},
     max_mem  {0},
     time0    {0.},
     watch    {},
-    call_print_interval {print_int}
+    call_print_interval {print_int},
+    n_total_calls { _n_total_calls } 
 {
     watch.Start();
     call();
@@ -52,9 +54,31 @@ string MemTimeProgression::set_stats() {
     watch.Continue();
 
     const char* pm_mem = (mem1>mem0) ? "+" : "-";
-    stats = Form(" Finished %8lli calls | Time: %5.0f sec (+ %4.0f) | "
+    if (n_total_calls == 0) {
+      stats = Form(" Finished %8lli calls | Time: %5.0f sec (+ %4.0f) | "
                  "Mem: %6.2f MB (%s%6.2f)",
                   nCalls, time1, time1-time0, mem1/1000., pm_mem, (mem1-mem0)/1000.);
+    } else {
+      const double calls_left = n_total_calls-nCalls;
+      const double rate = nCalls / time1;
+      int sec_left = calls_left / rate;
+      int min_left = sec_left / 60;
+      const int hr_left  = min_left / 60;
+      sec_left = sec_left % 60;
+      min_left = min_left % 60;
+
+      ostringstream time;
+      time << std::setfill('0') << std::setw(2) << hr_left  << ":"
+           << std::setfill('0') << std::setw(2) << min_left << ":"
+           << std::setfill('0') << std::setw(2) << sec_left;
+      
+
+      stats = Form(" Finished %8lli calls | Time: %5.0f sec (+ %4.0f) | "
+                 "Mem: %6.2f MB (%s%6.2f)  | ETA %s",
+                  nCalls, time1, time1-time0, mem1/1000., pm_mem, (mem1-mem0)/1000.,
+                  time.str().c_str());
+    }
+
     time0=time1;
     mem0=mem1;
     return stats;

@@ -21,11 +21,12 @@ class CaloJetRhoEst : public SubsysReco
 {
  public:
   CaloJetRhoEst(
-      const double min_calo_pt           = 0.02,
-      const  int n_print_freq            = 10,
-      const  std::string &recojetname    = "AntiKt_Tower_r04",
-      const  std::string &truthjetname   = "AntiKt_Truth_r04",
-      const  std::string &outputfilename = "CaloJetRhoEst.root");
+      const double min_calo_pt          = 0.02,
+      const int total_jobs              = 0,
+      const int n_print_freq            = 10,
+      const std::string &recojetname    = "AntiKt_Tower_r04",
+      const std::string &truthjetname   = "AntiKt_Truth_r04",
+      const std::string &outputfilename = "CaloJetRhoEst.root");
 
   const double min_calo_pt;
   virtual ~CaloJetRhoEst();

@@ -25,7 +25,9 @@ R__LOAD_LIBRARY(libg4jets.so)
 R__LOAD_LIBRARY(libjetbackground.so)
 R__LOAD_LIBRARY(libcalojetrhoest.so)
 
-void Fun4All_CaloJetRho(const int nevnt = 12, const double min_calo_pt=0.02, 
+void Fun4All_CaloJetRho(
+    const int nevnt = 120, 
+    const double min_calo_pt=0.02, 
     const int verbosity=1,
     const char* fout_name="out_CaloJetRho.root")
 {
@@ -54,8 +56,8 @@ void Fun4All_CaloJetRho(const int nevnt = 12, const double min_calo_pt=0.02,
 
   // change lower pt and eta cut to make them visible using the example
   //  pythia8 file
-  int print_stats_freq = 100;
-  CaloJetRhoEst *myJetAnalysis = new CaloJetRhoEst(min_calo_pt, print_stats_freq, "AntiKt_Tower_r04", "AntiKt_Truth_r04", fout_name);
+  int print_stats_freq = 20;
+  CaloJetRhoEst *myJetAnalysis = new CaloJetRhoEst(min_calo_pt, nevnt, print_stats_freq, "AntiKt_Tower_r04", "AntiKt_Truth_r04", fout_name);
   myJetAnalysis->setPtRange(5, 100);
   myJetAnalysis->setEtaRange(-1.1, 1.1);
   myJetAnalysis->add_input(new TowerJetInput(Jet::CEMC_TOWER));
