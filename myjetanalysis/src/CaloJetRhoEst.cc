@@ -48,6 +48,7 @@ using namespace fastjet;
 
 CaloJetRhoEst::CaloJetRhoEst(
       const double _min_calo_pt,
+      const int total_jobs,
       const int n_print_freq,
       const std::string& recojetname,
       const std::string& truthjetname,
@@ -73,7 +74,7 @@ CaloJetRhoEst::CaloJetRhoEst(
   , m_TruthJetPt   {}
   , m_TruthJetArea {}
   , _inputs        {}
-  , print_stats{n_print_freq}
+  , print_stats{n_print_freq, total_jobs}
 { 
 }
 
