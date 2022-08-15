@@ -87,9 +87,9 @@ void Fun4All_CaloJetRho(const int nevnt = 12, const double min_calo_pt=0.02,
   invertex->AddListFile("dst_vertex.list",1);
   se->registerInputManager(invertex);
     
-  /* Fun4AllInputManager *inbbc = new Fun4AllDstInputManager("DSTbbc"); */
-  /* inbbc->AddListFile("dst_bbc_g4hit.list",1); */
-  /* se->registerInputManager(inbbc); */
+  Fun4AllInputManager *inbbc = new Fun4AllDstInputManager("DSTbbc");
+  inbbc->AddListFile("dst_bbc_g4hit.list",1);
+  se->registerInputManager(inbbc);
 
   myJetAnalysis->Verbosity(verbosity);
   se->run(nevnt);
