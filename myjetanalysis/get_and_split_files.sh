@@ -6,7 +6,7 @@ mkdir -p lists
 
 cd lists
 
-CreateFileList.pl -run 4 -type 11 -n 100000 -embed DST_BBC_G4HIT DST_CALO_CLUSTER DST_CALO_G4HIT DST_TRUTH_JET DST_VERTEX
+CreateFileList.pl -run 4 -type 11 -embed DST_BBC_G4HIT DST_CALO_CLUSTER DST_CALO_G4HIT DST_TRUTH_JET DST_VERTEX
 
 split -l40 --numeric-suffixes=1 --suffix-length=2 --additional-suffix=".list" dst_truth_jet.list "dst_truth_jet_"
 split -l40 --numeric-suffixes=1 --suffix-length=2 --additional-suffix=".list" dst_calo_g4hit.list "dst_calo_g4hit_"
