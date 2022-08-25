@@ -247,13 +247,13 @@ int CaloJetRhoEst::process_event(PHCompositeNode* topNode)
   }
 
   if (Verbosity()>5) cout << "Starting background density calc" << endl;
-  JetDefinition jet_def(cambridge_algorithm, 0.4);     //  JET DEFINITION
+  JetDefinition jet_def(kt_algorithm, 0.4);     //  JET DEFINITION
 
   const double ghost_max_rap { 2.0 };
   const double ghost_R = 0.01;
   const double jet_R = 0.4;
   AreaDefinition area_def_bkgd( active_area_explicit_ghosts, GhostedAreaSpec(ghost_max_rap, 1, ghost_R));
-  JetDefinition jet_def_bkgd(cambridge_algorithm, jet_R); // <--
+  JetDefinition jet_def_bkgd(kt_algorithm, jet_R); // <--
   Selector selector_rm2 = SelectorAbsEtaMax(0.6) * (!SelectorNHardest(2)); // <--
   fastjet::JetMedianBackgroundEstimator bge_rm2 {selector_rm2, jet_def_bkgd, area_def_bkgd};
   bge_rm2.set_particles(particles_pseudojets);

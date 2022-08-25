@@ -69,7 +69,7 @@ void Fun4All_CaloJetRho(
   // need calo  jets
   // need event info
   // need primary vertex
-// $ CreateFileList.pl -run 4 -n 1000 -type 11 DST_VERTEX DST_CALO_G4HIT DST_CALO_CLUSTER DST_TRUTH_JET
+// $ CreateFileList.pl -run 4 -n 1000 -type 11 -embed DST_VERTEX DST_CALO_G4HIT DST_CALO_CLUSTER DST_TRUTH_JET DST_BBC_G4HIT
 //    PHG4CentralityReco::InitRun : cannot find G4HIT_BBC, will not use MBD centrality
 //    PHG4CentralityReco::InitRun : cannot find G4HIT_EPD, will not use sEPD centrality
     
