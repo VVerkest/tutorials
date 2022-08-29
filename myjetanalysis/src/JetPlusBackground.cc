@@ -51,13 +51,13 @@ JetPlusBackground::JetPlusBackground(
       const int total_jobs,
       const int n_print_freq,
       const std::string& recojetname,
-      const std::string& truthjetname,
+      /* const std::string& truthjetname, */
       const std::string& outputfilename
     )
-  : SubsysReco("JetPlusBackground_" + recojetname + "_" + truthjetname)
+  : SubsysReco("JetPlusBackground_" + recojetname )
   , min_calo_pt {_min_calo_pt}
   , m_recoJetName(recojetname)
-  , m_truthJetName(truthjetname)
+  /* , m_truthJetName(truthjetname) */
   , m_outputFileName(outputfilename)
   , m_etaRange    (-1, 1)
   , m_ptRange     (5,  100)
@@ -165,14 +165,14 @@ int JetPlusBackground::process_event(PHCompositeNode* topNode)
   // statistics on how the program is doing
   print_stats.call();
   //interface to truth jets
-  JetMap* jetsMC = findNode::getClass<JetMap>(topNode, m_truthJetName);
-  if (!jetsMC )
-  {
-    std::cout
-      << "MyJetAnalysis::process_event - Error can not find DST Truth JetMap node "
-      << m_truthJetName << std::endl;
-    exit(-1);
-  }
+  /* JetMap* jetsMC = findNode::getClass<JetMap>(topNode, m_truthJetName); */
+  /* if (!jetsMC ) */
+  /* { */
+  /*   std::cout */
+  /*     << "MyJetAnalysis::process_event - Error can not find DST Truth JetMap node " */
+  /*     << m_truthJetName << std::endl; */
+  /*   exit(-1); */
+  /* } */
 
   // get the inputs for reconstructed jets (from /direct/sphenix+u/dstewart/vv/coresoftware/simulation/g4simulation/g4jets/JetReco.cc
   std::vector<Jet *> inputs;  // owns memory
@@ -225,26 +225,26 @@ int JetPlusBackground::process_event(PHCompositeNode* topNode)
     }
   }
   // add a psuedojet dijet (-ish); just require recoil
-  m_embPhi_A = png.Uniform(-M_PI, M_PI);
+  m_embPhi_A = rng.Uniform(-M_PI, M_PI);
   m_embPt_A  = rng.Uniform(15,40);
   m_embEta_A = rng.Uniform(-1., 1);
-  const int index_A = 13;
+  /* const int index_A = 13; */
 
   m_embPhi_B = m_embPhi_A + M_PI;
   while (m_embPhi_B > M_PI) m_embPhi_B -= 2*M_PI;
   m_embPt_B  = rng.Uniform(15,40);
   m_embEta_B = rng.Uniform(-1., 1);
-  const int index_B = 14;
+  /* const int index_B = 14; */
 
-  auto emb_A = fastjet::PseudoJet{};
-  emb_A.reset_PtYPhiM(m_embPt_A, m_embEta_A, m_embPhi_A);
-  emb_A.set_user_index(index_A); // lucky number... --> will check in leading jet if this particle is present.
-  particles_pseudojet.push_back(emb_A);
+  auto embjet_A = fastjet::PseudoJet();
+  embjet_A.reset_PtYPhiM(m_embPt_A, m_embEta_A, m_embPhi_A);
+  /* embjet_A.set_user_index(index_A); // lucky number... --> will check in leading jet if this particle is present. */
+  particles_pseudojets.push_back(embjet_A);
 
-  auto emb_B = fastjet::PseudoJet{};
-  emb_B.reset_PtYPhiM(m_embPt_B, m_embEta_B, m_embPhi_B);
-  emb_B.set_user_index(index_B); // lucky number... --> will check in leading jet if this particle is present.
-  particles_pseudojet.push_back(emb_B);
+  auto embjet_B = fastjet::PseudoJet();
+  embjet_B.reset_PtYPhiM(m_embPt_B, m_embEta_B, m_embPhi_B);
+  /* embjet_B.set_user_index(index_B); // lucky number... --> will check in leading jet if this particle is present. */
+  particles_pseudojets.push_back(embjet_B);
 
   for (auto &p : particles) delete p;
 
@@ -317,17 +317,20 @@ int JetPlusBackground::process_event(PHCompositeNode* topNode)
     return Fun4AllReturnCodes::EVENT_OK;
   }
 
-  if (jets[0].contains(indexA)) {
+  if (jets[0].contains(embjet_A)) {
+    cout << " has A " << endl;
     m_RhoBias_lead = (m_embPt_A - (jets[0].pt()-jets[0].area()*m_rho)) / jets[0].area();
-  } else if (jets[0].contains(indexB)) {
-    m_RhoBias_lead = (m_embPt_B.pt() - (jets[0].pt()-jets[0].area()*m_rho)) / jets[0].area();
+  } else if (jets[0].contains(embjet_B)) {
+    m_RhoBias_lead = (m_embPt_B - (jets[0].pt()-jets[0].area()*m_rho)) / jets[0].area();
   } 
 
-  if (jets[1].contains(indexA)) {
-    m_RhoBias_sub = (m_embPt_A.pt() - (jets[1].pt()-jets[1].area()*m_rho)) / jets[1].area();
-  } else if (jets[1].contains(indexB)) {
-    m_RhoBias_sub = (m_embPt_B.pt() - (jets[1].pt()-jets[1].area()*m_rho)) / jets[1].area();
-  } 
+  if (jets.size() > 1) {
+    if (jets[1].contains(embjet_A)) {
+      m_RhoBias_sub = (m_embPt_A - (jets[1].pt()-jets[1].area()*m_rho)) / jets[1].area();
+    } else if (jets[1].contains(embjet_B)) {
+      m_RhoBias_sub = (m_embPt_B - (jets[1].pt()-jets[1].area()*m_rho)) / jets[1].area();
+    } 
+  }
 
   // probably don't really need to keep these jets
   for (auto jet : jets) {
@@ -351,11 +354,11 @@ void JetPlusBackground::clear_vectors() {
   m_CaloJetPt.clear();
   m_CaloJetArea.clear();
   
-  m_TruthJetEta.clear();
-  m_TruthJetPhi.clear();
-  m_TruthJetE.clear();
-  m_TruthJetPt.clear();
-  m_TruthJetArea.clear();
+  /* m_TruthJetEta.clear(); */
+  /* m_TruthJetPhi.clear(); */
+  /* m_TruthJetE.clear(); */
+  /* m_TruthJetPt.clear(); */
+  /* m_TruthJetArea.clear(); */
 
   m_RhoBias_lead = -100.;
   m_RhoBias_sub  = -100.;
