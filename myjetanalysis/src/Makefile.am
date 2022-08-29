@@ -6,7 +6,8 @@ AM_CPPFLAGS = \
   -I`root-config --incdir`
 
 lib_LTLIBRARIES = \
-   libcalojetrhoest.la
+   libcalojetrhoest.la \
+   libjetplusbackground.la
 
 libcalojetrhoest_la_LDFLAGS = \
   -L$(libdir) \
@@ -24,7 +25,22 @@ libcalojetrhoest_la_SOURCES = \
 
 pkginclude_HEADERS = \
   CaloJetRhoEst.h \
-	MemTimeProgression.h 
+  JetPlusBackground.h \
+	MemTimeProgression.h
+ 
+   libjetplusbackground_la_LDFLAGS = \
+  -L$(libdir) \
+  -L$(OFFLINE_MAIN)/lib \
+  `fastjet-config --libs`
+
+  libjetplusbackground_la_LIBADD = \
+  -lfun4all \
+  -lg4dst \
+  -lg4eval
+
+  libjetplusbackground_la_SOURCES = \
+  JetPlusBackground.cc \
+    MemTimeProgression.cc
 
 ################################################
 # linking tests
@@ -38,7 +54,8 @@ testexternals_SOURCES = \
   testexternals.cc
 
 testexternals_LDADD = \
-  libcalojetrhoest.la
+  libcalojetrhoest.la \
+  libjetplusbackground.la
 
 testexternals.cc:
 	echo "//*** this is a generated file. Do not commit, do not edit" > $@
