@@ -4,7 +4,11 @@ mkdir -p out condor-out/jet_bg out/jet_bg condor-out/calo_rho out/calo_rho
 
 mkdir -p lists lists/calo_rho lists/jet_bg
 
+DIR=$(cd "$(dirname "$0")"; pwd)
+
 cd lists/calo_rho
+
+echo "entering directory `pwd`"
 
 CreateFileList.pl -run 4 -type 11 -embed DST_BBC_G4HIT DST_CALO_CLUSTER DST_CALO_G4HIT DST_TRUTH_JET DST_VERTEX
 
@@ -24,7 +28,11 @@ do
   printf "%0*d\n" 2 $i >> index.txt
 done
 
+cd $DIR
+
 cd lists/jet_bg
+
+echo "entering directory `pwd`"
 
 CreateFileList.pl -run 4 -type 4 DST_BBC_G4HIT DST_CALO_CLUSTER DST_CALO_G4HIT DST_VERTEX
 
