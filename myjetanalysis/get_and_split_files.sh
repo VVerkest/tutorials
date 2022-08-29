@@ -34,7 +34,7 @@ cd lists/jet_bg
 
 echo "entering directory `pwd`"
 
-CreateFileList.pl -n -run 4 -type 4 DST_BBC_G4HIT DST_CALO_CLUSTER DST_CALO_G4HIT DST_VERTEX
+CreateFileList.pl -run 4 -type 4 DST_BBC_G4HIT DST_CALO_CLUSTER DST_CALO_G4HIT DST_VERTEX
 
 split -l40 --numeric-suffixes=1 --suffix-length=2 --additional-suffix=".list" dst_calo_g4hit.list "dst_calo_g4hit_"
 split -l40 --numeric-suffixes=1 --suffix-length=2 --additional-suffix=".list" dst_calo_cluster.list "dst_calo_cluster_"
