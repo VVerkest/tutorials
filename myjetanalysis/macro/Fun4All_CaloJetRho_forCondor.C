@@ -33,12 +33,12 @@ void Fun4All_CaloJetRho_forCondor(
   )
 {
     
-  string intrueList = "lists/dst_truth_jet.list";
-  string incaloList = "lists/dst_calo_g4hit.list";
-  string incaloclusterList = "lists/dst_calo_cluster.list";
-  string invertexList = "lists/dst_vertex.list";
-  string inbbcList = "lists/dst_bbc_g4hit.list";
-  string fout_name="out/CaloJetRho.root";
+  string intrueList = "lists/calo_rho/dst_truth_jet.list";
+  string incaloList = "lists/calo_rho/dst_calo_g4hit.list";
+  string incaloclusterList = "lists/calo_rho/dst_calo_cluster.list";
+  string invertexList = "lists/calo_rho/dst_vertex.list";
+  string inbbcList = "lists/calo_rho/dst_bbc_g4hit.list";
+  string fout_name="out/calo_rho/CaloJetRho.root";
     
   if (index) {
     intrueList.insert(intrueList.find_first_of("."),index,3);
