@@ -59,22 +59,29 @@ JetPlusBackground::JetPlusBackground(
   , m_recoJetName(recojetname)
   , m_truthJetName(truthjetname)
   , m_outputFileName(outputfilename)
-  , m_etaRange (-1, 1)
-  , m_ptRange  (5,  100)
-  , m_T  (nullptr)
-  , m_id (-1)
-  , m_CaloJetEta   {}
-  , m_CaloJetPhi   {}
-  , m_CaloJetE     {}
-  , m_CaloJetPt    {}
-  , m_CaloJetArea  {}
-  , m_TruthJetEta  {}
-  , m_TruthJetPhi  {}
-  , m_TruthJetE    {}
-  , m_TruthJetPt   {}
-  , m_TruthJetArea {}
+  , m_etaRange    (-1, 1)
+  , m_ptRange     (5,  100)
+  , m_T           (nullptr)
+  , m_id          (-1)
+  , m_CaloJetEta  {}
+  , m_CaloJetPhi  {}
+  , m_CaloJetE    {}
+  , m_CaloJetPt   {}
+  , m_CaloJetArea {}
+  , m_embEta_A    {-100.}
+  , m_embPhi_A    {-100.}
+  , m_embPt_A     {-100.}
+  , m_embEta_B    {-100.}
+  , m_embPhi_B    {-100.}
+  , m_embPt_B     {-100.}
+  /* , m_TruthJetEta  {} */
+  /* , m_TruthJetPhi  {} */
+  /* , m_TruthJetE    {} */
+  /* , m_TruthJetPt   {} */
+  /* , m_TruthJetArea {} */
   , _inputs        {}
   , print_stats{n_print_freq, total_jobs}
+  , rng {}
 { 
 }
 
@@ -104,18 +111,29 @@ int JetPlusBackground::Init(PHCompositeNode* topNode)
   m_T->Branch("centrality",  &m_centrality);
   m_T->Branch("impactparam", &m_impactparam);
 
+  m_T->Branch("rhoBias_lead",  &m_RhoBias_lead);
+  m_T->Branch("rhoBias_sub",   &m_RhoBias_sub);
+
   m_T->Branch("CaloJetEta",    &m_CaloJetEta);
   m_T->Branch("CaloJetPhi",    &m_CaloJetPhi);
   m_T->Branch("CaloJetE",      &m_CaloJetE);
   m_T->Branch("CaloJetPt",     &m_CaloJetPt);
   m_T->Branch("CaloJetArea",   &m_CaloJetArea);
 
+  m_T->Branch("embEta_A", &m_embEta_A);
+  m_T->Branch("embPhi_A", &m_embPhi_A);
+  m_T->Branch("embPt_A",  &m_embPt_A);
+
+  m_T->Branch("embEta_B", &m_embEta_B);
+  m_T->Branch("embPhi_B", &m_embPhi_B);
+  m_T->Branch("embPt_B",  &m_embPt_B);
+
   //Truth Jets
-  m_T->Branch("TruthJetEta",  &m_TruthJetEta);
-  m_T->Branch("TruthJetPhi",  &m_TruthJetPhi);
-  m_T->Branch("TruthJetE",    &m_TruthJetE);
-  m_T->Branch("TruthJetPt",   &m_TruthJetPt);
-  m_T->Branch("TruthJetArea", &m_TruthJetArea);
+  /* m_T->Branch("TruthJetEta",  &m_TruthJetEta); */
+  /* m_T->Branch("TruthJetPhi",  &m_TruthJetPhi); */
+  /* m_T->Branch("TruthJetE",    &m_TruthJetE); */
+  /* m_T->Branch("TruthJetPt",   &m_TruthJetPt); */
+  /* m_T->Branch("TruthJetArea", &m_TruthJetArea); */
 
   return Fun4AllReturnCodes::EVENT_OK;
 }
@@ -206,6 +224,28 @@ int JetPlusBackground::process_event(PHCompositeNode* topNode)
       particles_pseudojets.push_back(pseudojet);
     }
   }
+  // add a psuedojet dijet (-ish); just require recoil
+  m_embPhi_A = png.Uniform(-M_PI, M_PI);
+  m_embPt_A  = rng.Uniform(15,40);
+  m_embEta_A = rng.Uniform(-1., 1);
+  const int index_A = 13;
+
+  m_embPhi_B = m_embPhi_A + M_PI;
+  while (m_embPhi_B > M_PI) m_embPhi_B -= 2*M_PI;
+  m_embPt_B  = rng.Uniform(15,40);
+  m_embEta_B = rng.Uniform(-1., 1);
+  const int index_B = 14;
+
+  auto emb_A = fastjet::PseudoJet{};
+  emb_A.reset_PtYPhiM(m_embPt_A, m_embEta_A, m_embPhi_A);
+  emb_A.set_user_index(index_A); // lucky number... --> will check in leading jet if this particle is present.
+  particles_pseudojet.push_back(emb_A);
+
+  auto emb_B = fastjet::PseudoJet{};
+  emb_B.reset_PtYPhiM(m_embPt_B, m_embEta_B, m_embPhi_B);
+  emb_B.set_user_index(index_B); // lucky number... --> will check in leading jet if this particle is present.
+  particles_pseudojet.push_back(emb_B);
+
   for (auto &p : particles) delete p;
 
   //centrality
@@ -222,29 +262,29 @@ int JetPlusBackground::process_event(PHCompositeNode* topNode)
    m_centrality  =  cent_node->get_centile(CentralityInfo::PROP::bimp);
    m_impactparam =  cent_node->get_quantity(CentralityInfo::PROP::bimp);
 
-  vector<Jet*> truth_jets;
-  for (auto& jet : jetsMC->vec(Jet::SORT::PT)) {  // will return jets in order of descending pT
-    float pt  = jet->get_pt();
-    float eta = jet->get_eta();
-    if  (pt < m_ptRange.first
-        || pt  > m_ptRange.second
-        || eta < m_etaRange.first
-        || eta > m_etaRange.second) continue;
-    truth_jets.push_back(jet);
-  }
+  /* vector<Jet*> truth_jets; */
+  /* for (auto& jet : jetsMC->vec(Jet::SORT::PT)) {  // will return jets in order of descending pT */
+  /*   float pt  = jet->get_pt(); */
+  /*   float eta = jet->get_eta(); */
+  /*   if  (pt < m_ptRange.first */
+  /*       || pt  > m_ptRange.second */
+  /*       || eta < m_etaRange.first */
+  /*       || eta > m_etaRange.second) continue; */
+  /*   truth_jets.push_back(jet); */
+  /* } */
 
-  Jet* leadJet    = (truth_jets.size()>0 ? truth_jets[0] : nullptr);
-  Jet* subLeadJet = (truth_jets.size()>1 ? truth_jets[1] : nullptr);
-  if (false) cout << leadJet->get_pt() << " " << subLeadJet->get_pt() << endl;
+  /* Jet* leadJet    = (truth_jets.size()>0 ? truth_jets[0] : nullptr); */
+  /* Jet* subLeadJet = (truth_jets.size()>1 ? truth_jets[1] : nullptr); */
+  /* if (false) cout << leadJet->get_pt() << " " << subLeadJet->get_pt() << endl; */
 
 
-  for (auto jet : truth_jets) {
-    m_TruthJetPt .push_back(jet->get_pt());
-    m_TruthJetEta.push_back(jet->get_eta());
-    /* cout << " olives: A2 MC " << truthjet->get_eta() << endl; */
-    m_TruthJetPhi.push_back(jet->get_phi());
-    m_TruthJetE  .push_back(jet->get_e());
-  }
+  /* for (auto jet : truth_jets) { */
+  /*   m_TruthJetPt .push_back(jet->get_pt()); */
+  /*   m_TruthJetEta.push_back(jet->get_eta()); */
+  /*   /1* cout << " olives: A2 MC " << truthjet->get_eta() << endl; *1/ */
+  /*   m_TruthJetPhi.push_back(jet->get_phi()); */
+  /*   m_TruthJetE  .push_back(jet->get_e()); */
+  /* } */
 
   if (Verbosity()>5) cout << "Starting background density calc" << endl;
   JetDefinition jet_def(kt_algorithm, 0.4);     //  JET DEFINITION
@@ -271,6 +311,25 @@ int JetPlusBackground::process_event(PHCompositeNode* topNode)
   JetDefinition jet_def_antikt(antikt_algorithm, jet_R);
   fastjet::ClusterSequenceArea clustSeq(particles_pseudojets, jet_def_antikt, area_def);
   vector<PseudoJet> jets = sorted_by_pt( selection( clustSeq.inclusive_jets(m_ptRange.first) ));
+
+  if (jets.size()==0) {
+    clear_vectors();
+    return Fun4AllReturnCodes::EVENT_OK;
+  }
+
+  if (jets[0].contains(indexA)) {
+    m_RhoBias_lead = (m_embPt_A - (jets[0].pt()-jets[0].area()*m_rho)) / jets[0].area();
+  } else if (jets[0].contains(indexB)) {
+    m_RhoBias_lead = (m_embPt_B.pt() - (jets[0].pt()-jets[0].area()*m_rho)) / jets[0].area();
+  } 
+
+  if (jets[1].contains(indexA)) {
+    m_RhoBias_sub = (m_embPt_A.pt() - (jets[1].pt()-jets[1].area()*m_rho)) / jets[1].area();
+  } else if (jets[1].contains(indexB)) {
+    m_RhoBias_sub = (m_embPt_B.pt() - (jets[1].pt()-jets[1].area()*m_rho)) / jets[1].area();
+  } 
+
+  // probably don't really need to keep these jets
   for (auto jet : jets) {
     m_CaloJetEta  .push_back( jet.eta());
     m_CaloJetPhi  .push_back( jet.phi_std());
@@ -297,4 +356,7 @@ void JetPlusBackground::clear_vectors() {
   m_TruthJetE.clear();
   m_TruthJetPt.clear();
   m_TruthJetArea.clear();
+
+  m_RhoBias_lead = -100.;
+  m_RhoBias_sub  = -100.;
 }

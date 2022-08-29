@@ -73,6 +73,9 @@ class JetPlusBackground : public SubsysReco
   float m_centrality;
   float m_impactparam;
 
+  float m_RhoBias_lead;
+  float m_RhoBias_sub;
+
   //Calo Jets
   std::vector<float> m_CaloJetEta;
   std::vector<float> m_CaloJetPhi;
@@ -80,15 +83,26 @@ class JetPlusBackground : public SubsysReco
   std::vector<float> m_CaloJetPt;
   std::vector<float> m_CaloJetArea;
 
-  //Truth Jets
-  std::vector<float> m_TruthJetEta;
-  std::vector<float> m_TruthJetPhi;
-  std::vector<float> m_TruthJetE;
-  std::vector<float> m_TruthJetPt;
-  std::vector<float> m_TruthJetArea;
+  // embedded particle
+  float m_embEta_A;
+  float m_embPhi_A;
+  float m_embPt_A;
+
+  float m_embEta_B;
+  float m_embPhi_B;
+  float m_embPt_B;
+
+
+  //Truth Jets -> only fill for the single leading leading jet
+  /* std::vector<float> m_TruthJetEta; */
+  /* std::vector<float> m_TruthJetPhi; */
+  /* std::vector<float> m_TruthJetE; */
+  /* std::vector<float> m_TruthJetPt; */
+  /* std::vector<float> m_TruthJetArea; */
 
   std::vector<JetInput *> _inputs; // copied from /direct/sphenix+u/dstewart/vv/coresoftware/simulation/g4simulation/g4jets/JetReco.h .cc
   MemTimeProgression print_stats;
+  TRandom3 rng;
 };
 
 #endif  // JETPLUSBACKGROUND_H_H
