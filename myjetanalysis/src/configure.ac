@@ -1,5 +1,4 @@
 AC_INIT(calojetrhoest,[1.00])
-AC_INIT(jetplusbackground,[1.00])
 AC_CONFIG_SRCDIR([configure.ac])
 
 AM_INIT_AUTOMAKE
