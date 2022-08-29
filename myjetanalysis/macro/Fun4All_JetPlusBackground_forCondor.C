@@ -18,7 +18,7 @@
 #include <jetbackground/FastJetAlgoSub.h>
 
 // here you need your package name (set in configure.ac)
-#include <jetplusbackground/JetPlusBackground.h>
+#include <calojetrhoest/JetPlusBackground.h>
 R__LOAD_LIBRARY(libfun4all.so)
 R__LOAD_LIBRARY(libg4centrality.so)
 R__LOAD_LIBRARY(libg4jets.so)
