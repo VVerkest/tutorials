@@ -62,22 +62,22 @@ bool JetPlusBackground::jetGT2_has_index(vector<fastjet::PseudoJet>& jets, int i
 };
 
 JetPlusBackground::JetPlusBackground(
-      const double _min_calo_pt,
-      const int total_jobs,
-      const int n_print_freq,
-      const std::string& recojetname,
-      /* const std::string& truthjetname, */
-      const std::string& outputfilename
+    const double _min_calo_pt,
+    const int total_jobs,
+    const int n_print_freq,
+    const std::string& recojetname,
+    /* const std::string& truthjetname, */
+    const std::string& outputfilename
     )
-  : SubsysReco("JetPlusBackground_" + recojetname )
+: SubsysReco("JetPlusBackground_" + recojetname )
   , min_calo_pt {_min_calo_pt}
-  , m_recoJetName(recojetname)
+, m_recoJetName(recojetname)
   /* , m_truthJetName(truthjetname) */
   , m_outputFileName(outputfilename)
   , m_etaRange    (-1, 1)
   , m_ptRange     (5,  100)
   , m_T           (nullptr)
-  , m_id          (-1)
+, m_id          (-1)
   , m_CaloJetEta  {}
   , m_CaloJetPhi  {}
   , m_CaloJetE    {}
@@ -89,11 +89,6 @@ JetPlusBackground::JetPlusBackground(
   , m_embEta_B    {-100.}
   , m_embPhi_B    {-100.}
   , m_embPt_B     {-100.}
-  /* , m_TruthJetEta  {} */
-  /* , m_TruthJetPhi  {} */
-  /* , m_TruthJetE    {} */
-  /* , m_TruthJetPt   {} */
-  /* , m_TruthJetArea {} */
   , _inputs        {}
   , print_stats{n_print_freq, total_jobs}
   , rng {}
@@ -104,8 +99,8 @@ JetPlusBackground::~JetPlusBackground()
 { 
   for (unsigned int i = 0; i < _inputs.size(); ++i) delete _inputs[i];
   _inputs.clear();
-    print_stats.set_get_stats();
-   cout << " Max memory used: " << print_stats.max_mem/1000. << " MB " << endl;
+  print_stats.set_get_stats();
+  cout << " Max memory used: " << print_stats.max_mem/1000. << " MB " << endl;
 
 }
 
@@ -143,12 +138,6 @@ int JetPlusBackground::Init(PHCompositeNode* topNode)
   m_T->Branch("embPhi_B", &m_embPhi_B);
   m_T->Branch("embPt_B",  &m_embPt_B);
 
-  //Truth Jets
-  /* m_T->Branch("TruthJetEta",  &m_TruthJetEta); */
-  /* m_T->Branch("TruthJetPhi",  &m_TruthJetPhi); */
-  /* m_T->Branch("TruthJetE",    &m_TruthJetE); */
-  /* m_T->Branch("TruthJetPt",   &m_TruthJetPt); */
-  /* m_T->Branch("TruthJetArea", &m_TruthJetArea); */
 
   return Fun4AllReturnCodes::EVENT_OK;
 }
@@ -157,12 +146,7 @@ int JetPlusBackground::End(PHCompositeNode* topNode)
 {
   cout << "JetPlusBackground::End - Output to " << m_outputFileName << endl;
   PHTFileServer::get().cd(m_outputFileName);
-
-  /* m_hInclusiveE->Write(); */
-  /* m_hInclusiveEta->Write(); */
-  /* m_hInclusivePhi->Write(); */
   m_T->Write();
-
   return Fun4AllReturnCodes::EVENT_OK;
 }
 
@@ -176,18 +160,7 @@ int JetPlusBackground::InitRun(PHCompositeNode* topNode)
 
 int JetPlusBackground::process_event(PHCompositeNode* topNode)
 {
-  /* cout << "Verbosity: " << Verbosity() << endl; */
-  // statistics on how the program is doing
   print_stats.call();
-  //interface to truth jets
-  /* JetMap* jetsMC = findNode::getClass<JetMap>(topNode, m_truthJetName); */
-  /* if (!jetsMC ) */
-  /* { */
-  /*   std::cout */
-  /*     << "MyJetAnalysis::process_event - Error can not find DST Truth JetMap node " */
-  /*     << m_truthJetName << std::endl; */
-  /*   exit(-1); */
-  /* } */
 
   // get the inputs for reconstructed jets (from /direct/sphenix+u/dstewart/vv/coresoftware/simulation/g4simulation/g4jets/JetReco.cc
   std::vector<Jet *> inputs;  // owns memory
@@ -244,13 +217,13 @@ int JetPlusBackground::process_event(PHCompositeNode* topNode)
   // add a psuedojet dijet (-ish); just require recoil
   m_embPhi_A = rng.Uniform(-M_PI, M_PI);
   m_embPt_A  = rng.Uniform(50,80);
-  m_embEta_A = rng.Uniform(-0.6., 0.6);
+  m_embEta_A = rng.Uniform(-0.6, 0.6);
   const int index_A = particles.size();
 
   m_embPhi_B = m_embPhi_A + M_PI;
   while (m_embPhi_B > M_PI) m_embPhi_B -= 2*M_PI;
   m_embPt_B  = rng.Uniform(50,80);
-  m_embEta_B = rng.Uniform(-0.6., 0.6);
+  m_embEta_B = rng.Uniform(-0.6, 0.6);
   const int index_B = index_A+1;
   /* const int index_B = 14; */
 
@@ -267,42 +240,19 @@ int JetPlusBackground::process_event(PHCompositeNode* topNode)
 
   for (auto &p : particles) delete p;
   //centrality
-   CentralityInfo* cent_node = findNode::getClass<CentralityInfo>(topNode, "CentralityInfo");
-   if (!cent_node)
-   {
-     std::cout
-       << "MyJetAnalysis::process_event - Error can not find centrality node "
-       << std::endl;
-     exit(-1);
-   }
+  CentralityInfo* cent_node = findNode::getClass<CentralityInfo>(topNode, "CentralityInfo");
+  if (!cent_node)
+  {
+    std::cout
+      << "MyJetAnalysis::process_event - Error can not find centrality node "
+      << std::endl;
+    exit(-1);
+  }
 
   //get the event centrality/impact parameter from HIJING
-   m_centrality  =  cent_node->get_centile(CentralityInfo::PROP::bimp);
-   m_impactparam =  cent_node->get_quantity(CentralityInfo::PROP::bimp);
+  m_centrality  =  cent_node->get_centile(CentralityInfo::PROP::bimp);
+  m_impactparam =  cent_node->get_quantity(CentralityInfo::PROP::bimp);
 
-  /* vector<Jet*> truth_jets; */
-  /* for (auto& jet : jetsMC->vec(Jet::SORT::PT)) {  // will return jets in order of descending pT */
-  /*   float pt  = jet->get_pt(); */
-  /*   float eta = jet->get_eta(); */
-  /*   if  (pt < m_ptRange.first */
-  /*       || pt  > m_ptRange.second */
-  /*       || eta < m_etaRange.first */
-  /*       || eta > m_etaRange.second) continue; */
-  /*   truth_jets.push_back(jet); */
-  /* } */
-
-  /* Jet* leadJet    = (truth_jets.size()>0 ? truth_jets[0] : nullptr); */
-  /* Jet* subLeadJet = (truth_jets.size()>1 ? truth_jets[1] : nullptr); */
-  /* if (false) cout << leadJet->get_pt() << " " << subLeadJet->get_pt() << endl; */
-
-
-  /* for (auto jet : truth_jets) { */
-  /*   m_TruthJetPt .push_back(jet->get_pt()); */
-  /*   m_TruthJetEta.push_back(jet->get_eta()); */
-  /*   /1* cout << " olives: A2 MC " << truthjet->get_eta() << endl; *1/ */
-  /*   m_TruthJetPhi.push_back(jet->get_phi()); */
-  /*   m_TruthJetE  .push_back(jet->get_e()); */
-  /* } */
 
   if (Verbosity()>5) cout << "Starting background density calc" << endl;
   JetDefinition jet_def(kt_algorithm, 0.4);     //  JET DEFINITION
@@ -331,7 +281,6 @@ int JetPlusBackground::process_event(PHCompositeNode* topNode)
   vector<fastjet::PseudoJet> jets = sorted_by_pt( selection( clustSeq.inclusive_jets(m_ptRange.first) ));
 
   // find matches for the embedded jets (might not be any, just because eta cuts)
-
   if (jets.size()==0) {
     clear_vectors();
     return Fun4AllReturnCodes::EVENT_OK;
@@ -392,12 +341,6 @@ void JetPlusBackground::clear_vectors() {
   m_CaloJetE.clear();
   m_CaloJetPt.clear();
   m_CaloJetArea.clear();
-  
-  /* m_TruthJetEta.clear(); */
-  /* m_TruthJetPhi.clear(); */
-  /* m_TruthJetE.clear(); */
-  /* m_TruthJetPt.clear(); */
-  /* m_TruthJetArea.clear(); */
 
   m_RhoBias_lead = -100.;
   m_RhoBias_sub  = -100.;
