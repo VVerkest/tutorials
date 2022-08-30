@@ -237,7 +237,6 @@ int CaloJetRhoEst::process_event(PHCompositeNode* topNode)
   Jet* subLeadJet = (truth_jets.size()>1 ? truth_jets[1] : nullptr);
   if (false) cout << leadJet->get_pt() << " " << subLeadJet->get_pt() << endl;
 
-
   for (auto jet : truth_jets) {
     m_TruthJetPt .push_back(jet->get_pt());
     m_TruthJetEta.push_back(jet->get_eta());
