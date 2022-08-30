@@ -1,12 +1,12 @@
 Universe     = vanilla
 Executable   = run_JetPlusBackground_indexed.sh
 notification = Never
-Output       = out/jet_bg/condor$(index).out
+Output       = condor-out/jet_bg/condor$(index).out
 Error        = condor-out/jet_bg/condor$(index).err
 Log          = condor-out/jet_bg/condor$(index).log
 Initialdir   = /sphenix/user/verkest/tutorials/myjetanalysis/
 
-Arguments = 1 0.2 1 \"_$(index)\"
+Arguments = 0.2 -1 1000 \"AntiKt_Tower_r04\" \"_$(index)\"
 
 # Jobs by default use 1.5Gb of RAM, you need to ask for more if needed
 # with request_memory. Be mindful - if you request too little your jobs will be evicted, if you request way too much it will take longer for your job to start

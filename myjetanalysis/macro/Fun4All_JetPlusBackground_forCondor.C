@@ -27,12 +27,15 @@ R__LOAD_LIBRARY(libjetbackground.so)
 R__LOAD_LIBRARY(libjetplusbackground.so)
 
 void Fun4All_JetPlusBackground_forCondor(
-    const int nevnt = 10,
     const double min_calo_pt=0.2,
-    const int verbosity=1,
+    const int nevnt = 10,
+    const int n_print_freq            = 1,
+    const std::string &recojetname    = "AntiKt_Tower_r04",
     const char *index = NULL
   )
 {
+
+  const int verbosity=1;
     
   string incaloList = "lists/jet_bg/dst_calo_g4hit.list";
   string incaloclusterList = "lists/jet_bg/dst_calo_cluster.list";
@@ -41,11 +44,11 @@ void Fun4All_JetPlusBackground_forCondor(
   string fout_name="out/jet_bg/JetPlusBackground.root";
     
   if (index) {
-    incaloList.insert(incaloList.find_first_of("."),index,3);
-    incaloclusterList.insert(incaloclusterList.find_first_of("."),index,3);
-    invertexList.insert(invertexList.find_first_of("."),index,3);
-    inbbcList.insert(inbbcList.find_first_of("."),index,3);
-    fout_name.insert(fout_name.find_first_of("."),index,3);
+    incaloList.insert(incaloList.find_first_of("."),index,4);
+    incaloclusterList.insert(incaloclusterList.find_first_of("."),index,4);
+    invertexList.insert(invertexList.find_first_of("."),index,4);
+    inbbcList.insert(inbbcList.find_first_of("."),index,4);
+    fout_name.insert(fout_name.find_first_of("."),index,4);
   }
     
   gSystem->Load("libjetplusbackground");
@@ -60,8 +63,8 @@ void Fun4All_JetPlusBackground_forCondor(
 
   // change lower pt and eta cut to make them visible using the example
   //  pythia8 file
-  int print_stats_freq = 20;
-  JetPlusBackground *myJetAnalysis = new JetPlusBackground(min_calo_pt, nevnt, print_stats_freq, "AntiKt_Tower_r04", "AntiKt_Truth_r04", fout_name);
+  int print_stats_freq = n_print_freq;
+  JetPlusBackground *myJetAnalysis = new JetPlusBackground(min_calo_pt, nevnt, print_stats_freq, "AntiKt_Tower_r04", fout_name);
   myJetAnalysis->setPtRange(5, 100);
   myJetAnalysis->setEtaRange(-1.1, 1.1);
   myJetAnalysis->add_input(new TowerJetInput(Jet::CEMC_TOWER));
