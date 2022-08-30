@@ -243,13 +243,13 @@ int JetPlusBackground::process_event(PHCompositeNode* topNode)
 
   // add a psuedojet dijet (-ish); just require recoil
   m_embPhi_A = rng.Uniform(-M_PI, M_PI);
-  m_embPt_A  = rng.Uniform(100,200);
+  m_embPt_A  = rng.Uniform(50,80);
   m_embEta_A = rng.Uniform(-1., 1);
   const int index_A = particles.size();
 
   m_embPhi_B = m_embPhi_A + M_PI;
   while (m_embPhi_B > M_PI) m_embPhi_B -= 2*M_PI;
-  m_embPt_B  = rng.Uniform(100,200);
+  m_embPt_B  = rng.Uniform(50,80);
   m_embEta_B = rng.Uniform(-1., 1);
   const int index_B = index_A+1;
   /* const int index_B = 14; */
