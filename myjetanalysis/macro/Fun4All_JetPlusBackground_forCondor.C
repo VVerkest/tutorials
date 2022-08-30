@@ -19,6 +19,7 @@
 
 // here you need your package name (set in configure.ac)
 #include <calojetrhoest/JetPlusBackground.h>
+
 R__LOAD_LIBRARY(libfun4all.so)
 R__LOAD_LIBRARY(libg4centrality.so)
 R__LOAD_LIBRARY(libg4jets.so)
@@ -26,7 +27,7 @@ R__LOAD_LIBRARY(libjetbackground.so)
 R__LOAD_LIBRARY(libjetplusbackground.so)
 
 void Fun4All_JetPlusBackground_forCondor(
-    const int nevnt = 100,
+    const int nevnt = 10,
     const double min_calo_pt=0.2,
     const int verbosity=1,
     const char *index = NULL
@@ -51,19 +52,6 @@ void Fun4All_JetPlusBackground_forCondor(
   gSystem->Load("libg4dst");
 
   Fun4AllServer *se = Fun4AllServer::instance();
-
-  if (false) {
-    JetReco *towerjetreco = new JetReco();
-    towerjetreco->add_input(new TowerJetInput(Jet::CEMC_TOWER));
-    towerjetreco->add_input(new TowerJetInput(Jet::HCALIN_TOWER));
-    towerjetreco->add_input(new TowerJetInput(Jet::HCALOUT_TOWER));
-    towerjetreco->add_algo(new  FastJetAlgoSub(Jet::ANTIKT, 0.4, 1), "AntiKt_Tower_r04");
-    towerjetreco->set_algo_node("ANTIKT");
-    towerjetreco->set_input_node("TOWER");
-    towerjetreco->Verbosity(verbosity);
-
-    se->registerSubsystem(towerjetreco);
-  }
     
   PHG4CentralityReco *cent = new PHG4CentralityReco();
   cent->Verbosity(0);

@@ -1,8 +1,6 @@
 #ifndef MACRO_FUN4ALLJETANA_C
 #define MACRO_FUN4ALLJETANA_C
 
-// CreateFileList.pl -n 1000 -type 6  DST_VERTEX DST_CALO_G4HIT DST_CALO_CLUSTER DST_BBC_G4HIT
-
 #include <fun4all/Fun4AllDstInputManager.h>
 #include <fun4all/Fun4AllInputManager.h>
 #include <fun4all/Fun4AllServer.h>
@@ -20,7 +18,7 @@
 #include <jetbackground/FastJetAlgoSub.h>
 
 // here you need your package name (set in configure.ac)
-#include <jetplusbackground/JetPlusBackground.h>
+#include <calojetrhoest/JetPlusBackground.h>
 
 R__LOAD_LIBRARY(libfun4all.so)
 R__LOAD_LIBRARY(libg4centrality.so)
@@ -30,7 +28,7 @@ R__LOAD_LIBRARY(libjetplusbackground.so)
 
 void Fun4All_JetPlusBackground(
     const int nevnt = 10, 
-    const double min_calo_pt=0.02, 
+    const double min_calo_pt=0.2,
     const int verbosity=1,
     const char* fout_name="out/JetPlusBackground.root")
 {
@@ -54,18 +52,6 @@ void Fun4All_JetPlusBackground(
   myJetAnalysis->add_input(new TowerJetInput(Jet::HCALIN_TOWER));
   myJetAnalysis->add_input(new TowerJetInput(Jet::HCALOUT_TOWER));
   se->registerSubsystem(myJetAnalysis);
-
-  // need truth jets
-  // need calo  jets
-  // need event info
-  // need primary vertex
-// $ CreateFileList.pl -run 4 -n 1000 -type 11 -embed DST_VERTEX DST_CALO_G4HIT DST_CALO_CLUSTER DST_TRUTH_JET DST_BBC_G4HIT
-//    PHG4CentralityReco::InitRun : cannot find G4HIT_BBC, will not use MBD centrality
-//    PHG4CentralityReco::InitRun : cannot find G4HIT_EPD, will not use sEPD centrality
-    
-  /* Fun4AllInputManager *intrue = new Fun4AllDstInputManager("DSTtruth"); */
-  /* intrue->AddListFile("dst_truth_jet.list",1); // adding the option "1" confirms to use, even if file is large */
-  /* se->registerInputManager(intrue); */
 
   Fun4AllInputManager *incalo = new Fun4AllDstInputManager("DSTcalo");
   incalo->AddListFile("lists/jet_bg/dst_calo_g4hit.list",1);
