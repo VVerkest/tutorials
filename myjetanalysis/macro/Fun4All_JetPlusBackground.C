@@ -68,19 +68,19 @@ void Fun4All_JetPlusBackground(
   /* se->registerInputManager(intrue); */
 
   Fun4AllInputManager *incalo = new Fun4AllDstInputManager("DSTcalo");
-  incalo->AddListFile("lists/dst_calo_g4hit.list",1);
+  incalo->AddListFile("lists/jet_bg/dst_calo_g4hit.list",1);
   se->registerInputManager(incalo);
 
   Fun4AllInputManager *incalocluster = new Fun4AllDstInputManager("DSTcalocluster");
-  incalocluster->AddListFile("lists/dst_calo_cluster.list",1);
+  incalocluster->AddListFile("lists/jet_bg/dst_calo_cluster.list",1);
   se->registerInputManager(incalocluster);
 
   Fun4AllInputManager *invertex = new Fun4AllDstInputManager("DSTvertex");
-  invertex->AddListFile("lists/dst_vertex.list",1);
+  invertex->AddListFile("lists/jet_bg/dst_vertex.list",1);
   se->registerInputManager(invertex);
     
   Fun4AllInputManager *inbbc = new Fun4AllDstInputManager("DSTbbc");
-  inbbc->AddListFile("lists/dst_bbc_g4hit.list",1);
+  inbbc->AddListFile("lists/jet_bg/dst_bbc_g4hit.list",1);
   se->registerInputManager(inbbc);
 
   myJetAnalysis->Verbosity(verbosity);
