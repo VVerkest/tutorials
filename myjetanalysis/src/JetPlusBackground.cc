@@ -46,6 +46,21 @@
 using namespace std;
 using namespace fastjet;
 
+bool JetPlusBackground::jet_has_index(vector<fastjet::PseudoJet>& jets, int which_jet, int index) {
+  if (which_jet >= (int) jets.size()) return false;
+  for (auto& cst : jets[which_jet].constituents()) {
+    if (cst.user_index() == index) return true;
+  }
+  return false;
+};
+bool JetPlusBackground::jetGT2_has_index(vector<fastjet::PseudoJet>& jets, int index) {
+  if (jets.size()<3) return false;
+  for (int i=2; i< (int)jets.size(); ++i) {
+    if (jet_has_index(jets,i,index)) return true;
+  }
+  return false;
+};
+
 JetPlusBackground::JetPlusBackground(
       const double _min_calo_pt,
       const int total_jobs,
@@ -224,30 +239,33 @@ int JetPlusBackground::process_event(PHCompositeNode* topNode)
       particles_pseudojets.push_back(pseudojet);
     }
   }
+
+
   // add a psuedojet dijet (-ish); just require recoil
   m_embPhi_A = rng.Uniform(-M_PI, M_PI);
-  m_embPt_A  = rng.Uniform(15,40);
+  m_embPt_A  = rng.Uniform(100,200);
   m_embEta_A = rng.Uniform(-1., 1);
-  /* const int index_A = 13; */
+  const int index_A = particles.size();
 
   m_embPhi_B = m_embPhi_A + M_PI;
   while (m_embPhi_B > M_PI) m_embPhi_B -= 2*M_PI;
-  m_embPt_B  = rng.Uniform(15,40);
+  m_embPt_B  = rng.Uniform(100,200);
   m_embEta_B = rng.Uniform(-1., 1);
+  const int index_B = index_A+1;
   /* const int index_B = 14; */
 
   auto embjet_A = fastjet::PseudoJet();
   embjet_A.reset_PtYPhiM(m_embPt_A, m_embEta_A, m_embPhi_A);
-  /* embjet_A.set_user_index(index_A); // lucky number... --> will check in leading jet if this particle is present. */
+  embjet_A.set_user_index(index_A);
   particles_pseudojets.push_back(embjet_A);
 
   auto embjet_B = fastjet::PseudoJet();
   embjet_B.reset_PtYPhiM(m_embPt_B, m_embEta_B, m_embPhi_B);
-  /* embjet_B.set_user_index(index_B); // lucky number... --> will check in leading jet if this particle is present. */
+  embjet_B.set_user_index(index_B);
   particles_pseudojets.push_back(embjet_B);
 
-  for (auto &p : particles) delete p;
 
+  for (auto &p : particles) delete p;
   //centrality
    CentralityInfo* cent_node = findNode::getClass<CentralityInfo>(topNode, "CentralityInfo");
    if (!cent_node)
@@ -310,27 +328,47 @@ int JetPlusBackground::process_event(PHCompositeNode* topNode)
   AreaDefinition area_def( active_area_explicit_ghosts, GhostedAreaSpec(max_rap, 1, ghost_R));
   JetDefinition jet_def_antikt(antikt_algorithm, jet_R);
   fastjet::ClusterSequenceArea clustSeq(particles_pseudojets, jet_def_antikt, area_def);
-  vector<PseudoJet> jets = sorted_by_pt( selection( clustSeq.inclusive_jets(m_ptRange.first) ));
+  vector<fastjet::PseudoJet> jets = sorted_by_pt( selection( clustSeq.inclusive_jets(m_ptRange.first) ));
+
+  // find matches for the embedded jets (might not be any, just because eta cuts)
 
   if (jets.size()==0) {
     clear_vectors();
     return Fun4AllReturnCodes::EVENT_OK;
   }
 
-  if (jets[0].contains(embjet_A)) {
-    cout << " has A " << endl;
-    m_RhoBias_lead = (m_embPt_A - (jets[0].pt()-jets[0].area()*m_rho)) / jets[0].area();
-  } else if (jets[0].contains(embjet_B)) {
-    m_RhoBias_lead = (m_embPt_B - (jets[0].pt()-jets[0].area()*m_rho)) / jets[0].area();
-  } 
 
-  if (jets.size() > 1) {
-    if (jets[1].contains(embjet_A)) {
-      m_RhoBias_sub = (m_embPt_A - (jets[1].pt()-jets[1].area()*m_rho)) / jets[1].area();
-    } else if (jets[1].contains(embjet_B)) {
-      m_RhoBias_sub = (m_embPt_B - (jets[1].pt()-jets[1].area()*m_rho)) / jets[1].area();
-    } 
+  // ok, check manually by user_index if the A and B are present in any jets, and if so, if they are present in the lead jets
+  bool A_in_0 = jet_has_index(jets,0, index_A);
+  bool B_in_0 = jet_has_index(jets,0, index_B);
+
+  if (!A_in_0 && !B_in_0) { // require at least one embedded jet
+    clear_vectors();
+    return Fun4AllReturnCodes::EVENT_OK;
   }
+
+  bool A_in_1, B_in_1;
+  if (jets.size()>1) {
+    A_in_1 = jet_has_index(jets, 1, index_A);
+    B_in_1 = jet_has_index(jets, 1, index_B);
+
+    // if embedded, fill sublead jet
+    if (!A_in_1 && !B_in_1) {
+      if (jetGT2_has_index(jets,index_A) || jetGT2_has_index(jets,index_B)) {
+        clear_vectors();
+        return Fun4AllReturnCodes::EVENT_OK;
+      }
+    }
+
+    if (A_in_1 || B_in_1) {
+      auto& sublead_emb = (A_in_1) ? embjet_A : embjet_B;
+      m_RhoBias_sub = (sublead_emb.pt() - (jets[1].pt()-jets[1].area()*m_rho)) / jets[1].area();
+    }
+  }
+
+  // fill leadjet
+  auto& lead_emb = (A_in_0) ? embjet_A : embjet_B;
+  m_RhoBias_lead = (lead_emb.pt() - (jets[0].pt()-jets[0].area()*m_rho)) / jets[0].area();
 
   // probably don't really need to keep these jets
   for (auto jet : jets) {
@@ -343,6 +381,7 @@ int JetPlusBackground::process_event(PHCompositeNode* topNode)
 
   m_T->Fill();
   clear_vectors();
+
 
   return Fun4AllReturnCodes::EVENT_OK;
 }

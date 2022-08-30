@@ -11,6 +11,7 @@
 #include <array>
 #include <vector>
 #include <TRandom3.h>
+#include <fastjet/PseudoJet.hh>
 
 class PHCompositeNode;
 class JetEvalStack;
@@ -104,6 +105,9 @@ class JetPlusBackground : public SubsysReco
   std::vector<JetInput *> _inputs; // copied from /direct/sphenix+u/dstewart/vv/coresoftware/simulation/g4simulation/g4jets/JetReco.h .cc
   MemTimeProgression print_stats;
   TRandom3 rng;
+
+  bool jet_has_index(vector<fastjet::PseudoJet>& jets, int which_jet, int index);
+  bool jetGT2_has_index(vector<fastjet::PseudoJet>& jets, int index);
 };
 
 #endif  // JETPLUSBACKGROUND_H_H
