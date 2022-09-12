@@ -7,7 +7,8 @@ AM_CPPFLAGS = \
 
 lib_LTLIBRARIES = \
    libcalojetrhoest.la \
-   libjetplusbackground.la
+   libjetplusbackground.la \
+   libtracksandcalojets.la
 
 libcalojetrhoest_la_LDFLAGS = \
   -L$(libdir) \
@@ -28,20 +29,34 @@ pkginclude_HEADERS = \
   JetPlusBackground.h \
 	MemTimeProgression.h
  
-   libjetplusbackground_la_LDFLAGS = \
+libjetplusbackground_la_LDFLAGS = \
   -L$(libdir) \
   -L$(OFFLINE_MAIN)/lib \
   `fastjet-config --libs`
 
-  libjetplusbackground_la_LIBADD = \
+libjetplusbackground_la_LIBADD = \
   -lfun4all \
   -lg4dst \
   -lg4eval
 
-  libjetplusbackground_la_SOURCES = \
+libjetplusbackground_la_SOURCES = \
   JetPlusBackground.cc \
     MemTimeProgression.cc
+ 
+libtracksandcalojets_la_LDFLAGS = \
+  -L$(libdir) \
+  -L$(OFFLINE_MAIN)/lib \
+  `fastjet-config --libs`
 
+libtracksandcalojets_la_LIBADD = \
+  -lfun4all \
+  -lg4dst \
+  -lg4eval
+
+libtracksandcalojets_la_SOURCES = \
+  TracksAndCaloJets.cc \
+    MemTimeProgression.cc
+    
 ################################################
 # linking tests
 
@@ -55,7 +70,8 @@ testexternals_SOURCES = \
 
 testexternals_LDADD = \
   libcalojetrhoest.la \
-  libjetplusbackground.la
+  libjetplusbackground.la \
+  libtracksandcalojets.la
 
 testexternals.cc:
 	echo "//*** this is a generated file. Do not commit, do not edit" > $@
