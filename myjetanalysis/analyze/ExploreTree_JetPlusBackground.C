@@ -6,15 +6,17 @@
 #include <TH1D.h>
 
 const int nbins_centrality = 10;
-const double bins_centrality[nbins_centrality+1] = { 0.0, 10.0, 20.0, 30.0, 40.0, 50.0, 60.0, 70.0, 80.0, 90.0, 100.0 };
+const double bins_centrality[nbins_centrality+1] = { 0., 10., 20., 30., 40., 50., 60., 70., 80., 90., 100. };
 const string name_centrality[nbins_centrality] = { "_0_10", "_10_20", "_20_30", "_30_40", "_40_50", "_50_60", "_60_70", "_70_80", "_80_90", "_90_100" };
-const string title_centrality[nbins_centrality] = { "0-10%", "10-20%", "20-30%", "30-40%", "40-50%", "50-60%", "60-70%", "70-80%", "80-90%", "90-100%" };
+const TString title_centrality[nbins_centrality] = { "0-10%", "10-20%", "20-30%", "30-40%", "40-50%", "50-60%", "60-70%", "70-80%", "80-90%", "90-100%" };
 const int color_centrality[nbins_centrality] = { 51, 56, 61, 66, 71, 76, 81, 86, 91, 96};
 
+const int nbins_dpt = 80;
+const double bins_dpt[nbins_dpt+1] = { -80., -79., -78., -77., -76., -75., -74., -73., -72., -71., -70., -69., -68., -67., -66., -65., -64., -63., -62., -61., -60., -59., -58., -57., -56., -55., -54., -53., -52., -51., -50., -49., -48., -47., -46., -45., -44., -43., -42., -41., -40., -39., -38., -37., -36., -35., -34., -33., -32., -31., -30., -29., -28., -27., -26., -25., -24., -23., -22., -21., -20., -19., -18., -17., -16., -15., -14., -13., -12., -11., -10., -9., -8., -7., -6., -5., -4., -3., -2., -1., 0. };
 const int nbins_rhopt = 80;
-const double bins_rhopt[nbins_rhopt+1] = { -40.0, -39.0, -38.0, -37.0, -36.0, -35.0, -34.0, -33.0, -32.0, -31.0, -30.0, -29.0, -28.0, -27.0, -26.0, -25.0, -24.0, -23.0, -22.0, -21.0, -20.0, -19.0, -18.0, -17.0, -16.0, -15.0, -14.0, -13.0, -12.0, -11.0, -10.0, -9.0, -8.0, -7.0, -6.0, -5.0, -4.0, -3.0, -2.0, -1.0, 0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0, 13.0, 14.0, 15.0, 16.0, 17.0, 18.0, 19.0, 20.0, 21.0, 22.0, 23.0, 24.0, 25.0, 26.0, 27.0, 28.0, 29.0, 30.0, 31.0, 32.0, 33.0, 34.0, 35.0, 36.0, 37.0, 38.0, 39.0, 40.0 };
+const double bins_rhopt[nbins_rhopt+1] = { -40., -39., -38., -37., -36., -35., -34., -33., -32., -31., -30., -29., -28., -27., -26., -25., -24., -23., -22., -21., -20., -19., -18., -17., -16., -15., -14., -13., -12., -11., -10., -9., -8., -7., -6., -5., -4., -3., -2., -1., 0., 1., 2., 3., 4., 5., 6., 7., 8., 9., 10., 11., 12., 13., 14., 15., 16., 17., 18., 19., 20., 21., 22., 23., 24., 25., 26., 27., 28., 29., 30., 31., 32., 33., 34., 35., 36., 37., 38., 39., 40. };
 const int nbins_rhopt_40 = 40;
-const double bins_dpt_40[nbins_rhopt_40+1] = { -40.0, -38.0, -36.0, -34.0, -32.0, -30.0, -28.0, -26.0, -24.0, -22.0, -20.0, -18.0, -16.0, -14.0, -12.0, -10.0, -8.0, -6.0, -4.0, -2.0, 0.0, 2.0, 4.0, 6.0, 8.0, 10.0, 12.0, 14.0, 16.0, 18.0, 20.0, 22.0, 24.0, 26.0, 28.0, 30.0, 32.0, 34.0, 36.0, 38.0, 40.0 };
+const double bins_dpt_40[nbins_rhopt_40+1] = { -40., -38., -36., -34., -32., -30., -28., -26., -24., -22., -20., -18., -16., -14., -12., -10., -8., -6., -4., -2., 0., 2., 4., 6., 8., 10., 12., 14., 16., 18., 20., 22., 24., 26., 28., 30., 32., 34., 36., 38., 40. };
 
 const double R=0.4;
 
@@ -51,7 +53,7 @@ void ExploreTree_JetPlusBackground() {
     
     TString name, title; // free temporary variables
 
-    TFile *inFile = new TFile("out/jet_bg/JetPlusBackground_136.root","READ");
+    TFile *inFile = new TFile("out/jet_bg/JetPlusBackground_all.root","READ");
     TTree *T = (TTree*)inFile->Get("T");
 
     int id;
@@ -82,10 +84,13 @@ void ExploreTree_JetPlusBackground() {
     T->SetBranchAddress("embPhi_B",&embPhi_B);
     T->SetBranchAddress("embPt_B",&embPt_B);
         
+    TH1D *h_rhoBias[nbins_centrality];
+    TH1D *h_ptBias[nbins_centrality];
     TH1D *h_rhoBias_lead[nbins_centrality];
     TH1D *h_ptBias_lead[nbins_centrality];
     TH1D *h_rhoBias_sub[nbins_centrality];
     TH1D *h_ptBias_sub[nbins_centrality];
+    TH2D *h_bg_response[nbins_centrality];
     TH2D *h_where_are_jets = new TH2D("h_where_are_jets","",3,0.,3.,3,0.,3.);
     
     h_where_are_jets->GetXaxis()->SetBinLabel(1,"A in lead");
@@ -96,6 +101,10 @@ void ExploreTree_JetPlusBackground() {
     h_where_are_jets->GetYaxis()->SetBinLabel(3,"B not found");
     
     for (int i=0; i<nbins_centrality; ++i) {
+        name = "h_rhoBias" + name_centrality[i];
+        h_rhoBias[i] = new TH1D(name,";(1/A_{calo}) [p_{T}^{probe} - (p_{T}^{calo} - #rho * A_{calo})]",nbins_rhopt,bins_rhopt);
+        name = "h_ptBias" + name_centrality[i];
+        h_ptBias[i] = new TH1D(name,";p_{T}^{probe} - (p_{T}^{calo} - #rho * A_{calo})",nbins_rhopt,bins_rhopt);
         name = "h_rhoBias_lead" + name_centrality[i];
         h_rhoBias_lead[i] = new TH1D(name,";(1/A_{calo,lead}) [p_{T}^{probe} - (p_{T}^{calo,lead} - #rho * A_{calo,lead})]",nbins_rhopt,bins_rhopt);
         name = "h_ptBias_lead" + name_centrality[i];
@@ -105,26 +114,45 @@ void ExploreTree_JetPlusBackground() {
         name = "h_ptBias_sub" + name_centrality[i];
         h_ptBias_sub[i] = new TH1D(name,";p_{T}^{probe} - (p_{T}^{calo,sub} - #rho * A_{calo,sub})",nbins_rhopt,bins_rhopt);
         
+        name = "h_bg_response" + name_centrality[i];
+        h_bg_response[i] = new TH2D(name,";p_{T}^{probe};p_{T}^{calo,sub} - #rho * A_{calo,sub}",100,0.,100.,100,0.,100.);
+        
+        h_rhoBias[i]->SetLineColor(color_centrality[i]);
+        h_rhoBias[i]->SetMarkerColor(color_centrality[i]);
+        h_rhoBias[i]->SetMarkerStyle(20);
+        h_rhoBias[i]->SetTitle(title_centrality[i]);
+        
+        h_ptBias[i]->SetLineColor(color_centrality[i]);
+        h_ptBias[i]->SetMarkerColor(color_centrality[i]);
+        h_ptBias[i]->SetMarkerStyle(20);
+        h_rhoBias[i]->SetTitle(title_centrality[i]);
+
         h_rhoBias_lead[i]->SetLineColor(color_centrality[i]);
         h_rhoBias_lead[i]->SetMarkerColor(color_centrality[i]);
         h_rhoBias_lead[i]->SetMarkerStyle(20);
-        
+        h_rhoBias[i]->SetTitle(title_centrality[i]);
+
         h_ptBias_lead[i]->SetLineColor(color_centrality[i]);
         h_ptBias_lead[i]->SetMarkerColor(color_centrality[i]);
         h_ptBias_lead[i]->SetMarkerStyle(20);
-        
+        h_rhoBias[i]->SetTitle(title_centrality[i]);
+
         h_rhoBias_sub[i]->SetLineColor(color_centrality[i]);
         h_rhoBias_sub[i]->SetMarkerColor(color_centrality[i]);
         h_rhoBias_sub[i]->SetMarkerStyle(21);
-        
+        h_rhoBias[i]->SetTitle(title_centrality[i]);
+
         h_ptBias_sub[i]->SetLineColor(color_centrality[i]);
         h_ptBias_sub[i]->SetMarkerColor(color_centrality[i]);
         h_ptBias_sub[i]->SetMarkerStyle(21);
+        h_rhoBias[i]->SetTitle(title_centrality[i]);
 //        [i]->Write();
 //        h_rhoBias_sub[i]->Write();
 //        h_ptBias_sub[i]->Write();
     }
 
+    cout<<T->GetEntries()<<" entries in tree"<<endl;
+    
     for (int ientry=0; ientry<T->GetEntries(); ++ientry) {
         
         T->GetEntry(ientry);
@@ -137,10 +165,10 @@ void ExploreTree_JetPlusBackground() {
         double leadPhi = CaloJetPhi->at(0); //        double leadE = CaloJetE->at(0);
         double leadArea = CaloJetArea->at(0);
         
-        double subPt = 0.0;
-        double subEta = 0.0;
-        double subPhi = 0.0; //        double subE = NULL;
-        double subArea = 0.0;
+        double subPt = 0.;
+        double subEta = 0.;
+        double subPhi = 0.; //        double subE = NULL;
+        double subArea = 0.;
         if (have_sublead) {  // we need >1 jet to fill these
             subPt = CaloJetPt->at(1);
             subEta = CaloJetEta->at(1);
@@ -167,32 +195,49 @@ void ExploreTree_JetPlusBackground() {
         else if (B_in_sub) { fill_B_bin = 1.5; }
         else { fill_B_bin = 2.5; }
         
-        h_where_are_jets->Fill(fill_A_bin,fill_B_bin); // cout<<A_in_lead<<" \t "<<A_in_sub<<" \t "<<B_in_lead<<" \t "<<B_in_sub<<endl;
+        
+//        cout<<ientry<<" \t "<<A_in_lead<<" \t "<<A_in_sub<<" \t "<<B_in_lead<<" \t "<<B_in_sub<<endl;
+        vector<int> break_entry = { 373514, 1306154, 2386357, 4276830, 5905514, 6937999, 7225771, 7646415, 12170773, 15010003, 15763070 };
+        if ( find(break_entry.begin(), break_entry.end(), ientry) != break_entry.end() ) { continue; }
+        h_where_are_jets->Fill(fill_A_bin,fill_B_bin); // breaks on entries 373514, 1306154, ...
         
         if ( (A_in_lead && B_in_sub) || (B_in_lead && A_in_sub) ) { // if A and B are the 2 highest pT jets, fill
             h_rhoBias_lead[cent]->Fill(rhoBias_lead);
             h_rhoBias_sub[cent]->Fill(rhoBias_sub);
             if ( A_in_lead && B_in_sub ) {
-                h_ptBias_lead[cent]->Fill( embPt_A - leadPt );
-                h_ptBias_sub[cent]->Fill( embPt_B - subPt );
+                h_ptBias_lead[cent]->Fill( embPt_A - (leadPt-rho*leadArea) );
+                h_ptBias_sub[cent]->Fill( embPt_B - (subPt-rho*subArea) );
+                h_bg_response[cent]->Fill(embPt_A,leadPt-rho*leadArea);
+                h_bg_response[cent]->Fill(embPt_B,subPt-rho*subArea);
             }
             else if ( B_in_lead && A_in_sub ) {
-                h_ptBias_lead[cent]->Fill( embPt_B - leadPt );
-                h_ptBias_sub[cent]->Fill( embPt_A - subPt );
+                h_ptBias_lead[cent]->Fill( embPt_B - (leadPt-rho*leadArea) );
+                h_ptBias_sub[cent]->Fill( embPt_A - (subPt-rho*subArea) );
+                h_bg_response[cent]->Fill(embPt_B,leadPt-rho*leadArea);
+                h_bg_response[cent]->Fill(embPt_A,subPt-rho*subArea);
             }
         }
 
+    }
 
+    for (int i=0; i<nbins_centrality; ++i) {
+        h_rhoBias[i]->Add(h_rhoBias_lead[i]);
+        h_rhoBias[i]->Add(h_rhoBias_sub[i]);
+        h_ptBias[i]->Add(h_ptBias_lead[i]);
+        h_ptBias[i]->Add(h_ptBias_sub[i]);
     }
     
     TFile *outFile = new TFile("analyze/exploreTree.root","RECREATE");
 
     h_where_are_jets->Write();
     for (int i=0; i<nbins_centrality; ++i) {
+        h_rhoBias[i]->Write();
+        h_ptBias[i]->Write();
         h_rhoBias_lead[i]->Write();
         h_ptBias_lead[i]->Write();
         h_rhoBias_sub[i]->Write();
         h_ptBias_sub[i]->Write();
+        h_bg_response[i]->Write();
     }
 
     h_rhoBias_lead[0]->Scale(1./h_rhoBias_lead[0]->Integral());
@@ -212,7 +257,33 @@ void ExploreTree_JetPlusBackground() {
         h_rhoBias_sub[i]->Scale(1./h_rhoBias_sub[i]->Integral());
         h_rhoBias_sub[i]->SetAxisRange( 0., 1., "Y");
         h_rhoBias_sub[i]->Draw("PSAME");
-//        h_ptBias_lead[i]->;
-//        h_ptBias_sub[i]->;
+    }
+    
+    new TCanvas();
+    for (int i=0; i<nbins_centrality; ++i) {
+        h_ptBias_lead[i]->Scale(1./h_ptBias_lead[i]->Integral());
+        h_ptBias_lead[i]->SetAxisRange( 0., 1., "Y");
+        h_ptBias_lead[i]->Draw("PSAME");
+    }
+    
+    new TCanvas();
+    for (int i=0; i<nbins_centrality; ++i) {
+        h_ptBias_sub[i]->Scale(1./h_ptBias_sub[i]->Integral());
+        h_ptBias_sub[i]->SetAxisRange( 0., 1., "Y");
+        h_ptBias_sub[i]->Draw("PSAME");
+    }
+
+    new TCanvas();
+    for (int i=0; i<nbins_centrality; ++i) {
+        h_ptBias[i]->Scale(1./h_ptBias[i]->Integral());
+        h_ptBias[i]->SetAxisRange( 0., 1., "Y");
+        h_ptBias[i]->Draw("PSAME");
+    }
+    
+    new TCanvas();
+    for (int i=0; i<nbins_centrality; ++i) {
+        h_rhoBias[i]->Scale(1./h_rhoBias[i]->Integral());
+        h_rhoBias[i]->SetAxisRange( 0., 1., "Y");
+        h_rhoBias[i]->Draw("PSAME");
     }
 }
