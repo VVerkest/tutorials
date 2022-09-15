@@ -27,6 +27,7 @@ libcalojetrhoest_la_SOURCES = \
 pkginclude_HEADERS = \
   CaloJetRhoEst.h \
   JetPlusBackground.h \
+  TracksAndCaloJets.h \
 	MemTimeProgression.h
  
 libjetplusbackground_la_LDFLAGS = \
