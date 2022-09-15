@@ -4,6 +4,8 @@ mkdir -p out condor-out/jet_bg out/jet_bg condor-out/calo_rho out/calo_rho
 
 mkdir -p lists lists/calo_rho lists/jet_bg
 
+mkdir -p out/trk lists/trk
+
 DIR=$(cd "$(dirname "$0")"; pwd)
 
 cd lists/calo_rho
@@ -50,3 +52,13 @@ for i in {1..400..1}
 do
   printf "%0*d\n" 3 $i >> index.txt
 done
+
+cd $DIR
+
+cd lists/trk
+
+echo "entering directory `pwd`"
+
+CreateFileList.pl -type 11 -embed DST_TRACKS
+
+split -l22 --numeric-suffixes=1 --suffix-length=2 --additional-suffix=".list" dst_tracks.list "dst_tracks_"
