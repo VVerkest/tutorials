@@ -38,7 +38,7 @@ void Fun4All_TracksAndCaloJets( // this will also work for a condor submission s
   string incaloclusterList = "lists/calo_rho/dst_calo_cluster.list";  // I think this is unnecessary here...
   string invertexList = "lists/calo_rho/dst_vertex.list";
   string inbbcList = "lists/calo_rho/dst_bbc_g4hit.list";
-  string fout_name="out/calo_rho/TracksAndCaloJets.root";
+  string fout_name="out/jet/TracksAndCaloJets.root";
     
   if (index) {
     intrueList.insert(intrueList.find_first_of("."),index,3);
