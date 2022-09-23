@@ -29,16 +29,31 @@ void Fun4All_CaloJetRho_forCondor(
     const int nevnt = 100,
     const double min_calo_pt=0.2,
     const int verbosity=1,
-    const char *index = NULL
+    const char *index = NULL,
+    const bool embed = true
   )
 {
+    string intrueList, incaloList, incaloclusterList, invertexList, inbbcList, fout_name;
+
+    if (embed) {
+      cout<<"USING EMBEDDING"<<endl;
+      intrueList = "lists/calo_rho/dst_truth_jet.list";
+      incaloList = "lists/calo_rho/dst_calo_g4hit.list";
+      incaloclusterList = "lists/calo_rho/dst_calo_cluster.list";
+      invertexList = "lists/calo_rho/dst_vertex.list";
+      inbbcList = "lists/calo_rho/dst_bbc_g4hit.list";
+      fout_name="out/calo_rho/CaloJetRho.root";
+    }
+    else {
+      intrueList = "lists/no_embed/dst_truth_jet.list";
+      incaloList = "lists/no_embed/dst_calo_g4hit.list";
+      incaloclusterList = "lists/no_embed/dst_calo_cluster.list";
+      invertexList = "lists/no_embed/dst_vertex.list";
+      inbbcList = "lists/no_embed/dst_bbc_g4hit.list";
+      fout_name="out/no_embed/CaloJetRho.root";
+    }
     
-  string intrueList = "lists/calo_rho/dst_truth_jet.list";
-  string incaloList = "lists/calo_rho/dst_calo_g4hit.list";
-  string incaloclusterList = "lists/calo_rho/dst_calo_cluster.list";
-  string invertexList = "lists/calo_rho/dst_vertex.list";
-  string inbbcList = "lists/calo_rho/dst_bbc_g4hit.list";
-  string fout_name="out/calo_rho/CaloJetRho.root";
+    cout<< intrueList<<"\t"<<incaloList<<"\t"<<incaloclusterList<<"\t"<<invertexList<<"\t"<<inbbcList<<"\t"<<fout_name <<endl;
     
   if (index) {
     intrueList.insert(intrueList.find_first_of("."),index,3);
