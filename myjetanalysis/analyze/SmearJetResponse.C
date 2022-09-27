@@ -45,7 +45,7 @@ void FillSmearedResponse(double jetPt, double truthPt, TH2D *hSmeared, TH1D *hDe
         double weight = hDeltaPt->GetBinContent(i);
         mean_dPt += (jetPt+delta_pt)*weight;
     }
-    hSmeared->Fill(mean_dPt,truthPt);
+    hSmeared->Fill(truthPt,mean_dPt);
 };
 
 int get_centrality_bin( float centrality ) {
@@ -247,7 +247,7 @@ void SmearJetResponse(){
             double jetArea = p_CaloJetArea->at(0);
 
             if (match_jet(truthEta,truthPhi,jetEta,jetPhi,0.4)) {
-                hResp_noEmbed->Fill(jetPt,truthPt);
+                hResp_noEmbed->Fill(truthPt,jetPt);
                 for (int i=0; i<nbins_centrality; ++i) { FillSmearedResponse(jetPt,truthPt,hResp_noEmbed_smear[i],h_delta_pt[i]); }
                 match_truth = true;
             }
@@ -256,26 +256,26 @@ void SmearJetResponse(){
         
     } // end PYTHIA loop
 
-    TH1D *yproj = (TH1D*) hResp_noEmbed->ProjectionY("yproj",1,hResp_noEmbed->GetNbinsY(),"E");
-    TH1D *xproj = (TH1D*) hResp_noEmbed->ProjectionX("xproj",1,hResp_noEmbed->GetNbinsX(),"E");
-    for (int ix=1; ix<=hResp_noEmbed->GetNbinsX(); ++ix) {
-        for (int iy=1; iy<=hResp_noEmbed->GetNbinsY(); ++iy) {
-            if (yproj->GetBinContent(iy)==0) { continue; }
-            hResp_noEmbed->SetBinContent(ix, iy, hResp_noEmbed->GetBinContent(ix,iy)/yproj->GetBinContent(iy) );
-        }
-    }
+//    TH1D *yproj = (TH1D*) hResp_noEmbed->ProjectionY("yproj",1,hResp_noEmbed->GetNbinsY(),"E");
+//    TH1D *xproj = (TH1D*) hResp_noEmbed->ProjectionX("xproj",1,hResp_noEmbed->GetNbinsX(),"E");
+//    for (int ix=1; ix<=hResp_noEmbed->GetNbinsX(); ++ix) {
+//        for (int iy=1; iy<=hResp_noEmbed->GetNbinsY(); ++iy) {
+//            if (yproj->GetBinContent(iy)==0) { continue; }
+//            hResp_noEmbed->SetBinContent(ix, iy, hResp_noEmbed->GetBinContent(ix,iy)/yproj->GetBinContent(iy) );
+//        }
+//    }
     
     TCanvas *c[nbins_centrality];
 
     for (int i=0; i<nbins_centrality; ++i) {
         
-        TH1D *yproj = (TH1D*) hResp_noEmbed_smear[i]->ProjectionY("yproj",1,hResp_noEmbed_smear[i]->GetNbinsY(),"E");
-        for (int ix=1; ix<=hResp_noEmbed_smear[i]->GetNbinsX(); ++ix) {
-            for (int iy=1; iy<=hResp_noEmbed_smear[i]->GetNbinsY(); ++iy) {
-                if (yproj->GetBinContent(iy)==0) { continue; }
-                hResp_noEmbed_smear[i]->SetBinContent(ix, iy, hResp_noEmbed_smear[i]->GetBinContent(ix,iy)/yproj->GetBinContent(iy) );
-            }
-        }
+//        TH1D *yproj = (TH1D*) hResp_noEmbed_smear[i]->ProjectionY("yproj",1,hResp_noEmbed_smear[i]->GetNbinsY(),"E");
+//        for (int ix=1; ix<=hResp_noEmbed_smear[i]->GetNbinsX(); ++ix) {
+//            for (int iy=1; iy<=hResp_noEmbed_smear[i]->GetNbinsY(); ++iy) {
+//                if (yproj->GetBinContent(iy)==0) { continue; }
+//                hResp_noEmbed_smear[i]->SetBinContent(ix, iy, hResp_noEmbed_smear[i]->GetBinContent(ix,iy)/yproj->GetBinContent(iy) );
+//            }
+//        }
         
         name = "c" + name_centrality[i];
         c[i] = new TCanvas(name);

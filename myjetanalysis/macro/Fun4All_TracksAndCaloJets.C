@@ -33,12 +33,13 @@ void Fun4All_TracksAndCaloJets( // this will also work for a condor submission s
   )
 {
     
-  string intrueList = "lists/calo_rho/dst_truth_jet.list";
-  string incaloList = "lists/calo_rho/dst_calo_g4hit.list";
-  string incaloclusterList = "lists/calo_rho/dst_calo_cluster.list";  // I think this is unnecessary here...
-  string invertexList = "lists/calo_rho/dst_vertex.list";
-  string inbbcList = "lists/calo_rho/dst_bbc_g4hit.list";
-  string fout_name="out/jet/TracksAndCaloJets.root";
+  string intrueList = "lists/trk/dst_truth_jet.list";
+  string incaloList = "lists/trk/dst_calo_g4hit.list";
+  string incaloclusterList = "lists/trk/dst_calo_cluster.list";  // I think this is unnecessary here...
+  string invertexList = "lists/trk/dst_vertex.list";
+  string inbbcList = "lists/trk/dst_bbc_g4hit.list";
+  string intrackList = "lists/trk/dst_tracks.list";
+  string fout_name="out/trk/TracksAndCaloJets.root";
     
   if (index) {
     intrueList.insert(intrueList.find_first_of("."),index,3);
@@ -46,6 +47,7 @@ void Fun4All_TracksAndCaloJets( // this will also work for a condor submission s
     incaloclusterList.insert(incaloclusterList.find_first_of("."),index,3);
     invertexList.insert(invertexList.find_first_of("."),index,3);
     inbbcList.insert(inbbcList.find_first_of("."),index,3);
+    intrackList.insert(intrackList.find_first_of("."),index,3);
     fout_name.insert(fout_name.find_first_of("."),index,3);
   }
     
@@ -89,6 +91,10 @@ void Fun4All_TracksAndCaloJets( // this will also work for a condor submission s
   Fun4AllInputManager *inbbc = new Fun4AllDstInputManager("DSTbbc");
   inbbc->AddListFile(inbbcList,1);
   se->registerInputManager(inbbc);
+
+  Fun4AllInputManager *intrack = new Fun4AllDstInputManager("DSTtracks");
+  intrack->AddListFile(intrackList,1);
+  se->registerInputManager(intrack);
 
   myJetAnalysis->Verbosity(verbosity);
   se->run(nevnt);
