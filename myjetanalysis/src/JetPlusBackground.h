@@ -75,10 +75,10 @@ class JetPlusBackground : public SubsysReco
   float m_centrality;
   float m_impactparam;
 
-  float m_RhoBias_lead;
-  float m_RhoBias_sub;
+  float m_RhoBias;
 
-  //Calo Jets
+  //Calo Jets -- Note: the event will be rejected if the leading jet does not
+  //             contain the embedded particle
   std::vector<float> m_CaloJetEta;
   std::vector<float> m_CaloJetPhi;
   std::vector<float> m_CaloJetE;
@@ -86,14 +86,9 @@ class JetPlusBackground : public SubsysReco
   std::vector<float> m_CaloJetArea;
 
   // embedded particle
-  float m_embEta_A;
-  float m_embPhi_A;
-  float m_embPt_A;
-
-  float m_embEta_B;
-  float m_embPhi_B;
-  float m_embPt_B;
-
+  float m_embEta;
+  float m_embPhi;
+  float m_embPt;
 
   //Truth Jets -> only fill for the single leading leading jet
   /* std::vector<float> m_TruthJetEta; */
@@ -106,7 +101,7 @@ class JetPlusBackground : public SubsysReco
   MemTimeProgression print_stats;
   TRandom3 rng;
 
-  bool jet_has_index(vector<fastjet::PseudoJet>& jets, int which_jet, int index);
+  /* bool jet_has_index(vector<fastjet::PseudoJet>& jets, int which_jet, int index); */
   bool jetGT2_has_index(vector<fastjet::PseudoJet>& jets, int index);
 };
 
