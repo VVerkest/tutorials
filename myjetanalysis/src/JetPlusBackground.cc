@@ -279,7 +279,7 @@ int JetPlusBackground::process_event(PHCompositeNode* topNode)
     return Fun4AllReturnCodes::EVENT_OK;
   }
 
-  m_RhoBias = (jets[0].pt() - jets[1].area()*m_rho) - m_embPt;
+  m_RhoBias = (jets[0].pt() - jets[0].area()*m_rho) - m_embPt;
 
   for (auto jet : jets) {
     m_CaloJetEta  .push_back( jet.eta());
