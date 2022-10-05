@@ -9,6 +9,8 @@
 
 #include <vector>
 #include <iostream>
+#include <cstring>
+#include <string>
 #include <TH1D.h>
 #include <TH2D.h>
 
@@ -16,13 +18,19 @@
 const int nbins_centrality = 10;
 const double bins_centrality[nbins_centrality+1] = { 0., 10., 20., 30., 40., 50., 60., 70., 80., 90., 100. };
 const string name_centrality[nbins_centrality] = { "_0_10", "_10_20", "_20_30", "_30_40", "_40_50", "_50_60", "_60_70", "_70_80", "_80_90", "_90_100" };
-const TString title_centrality[nbins_centrality] = { "0-10%", "10-20%", "20-30%", "30-40%", "40-50%", "50-60%", "60-70%", "70-80%", "80-90%", "90-100%" };
-const int color_centrality[nbins_centrality] = { 51, 56, 61, 66, 71, 76, 81, 86, 91, 96};
+const string title_centrality[nbins_centrality] = { "0-10%", "10-20%", "20-30%", "30-40%", "40-50%", "50-60%", "60-70%", "70-80%", "80-90%", "90-100%" };
+const int color_centrality[nbins_centrality] = { 51, 54, 59, 62, 65, 70, 83, 91, 95, 99};
 
 const int nbins_rhopt = 80;
 const double bins_rhopt[nbins_rhopt+1] = { -40., -39., -38., -37., -36., -35., -34., -33., -32., -31., -30., -29., -28., -27., -26., -25., -24., -23., -22., -21., -20., -19., -18., -17., -16., -15., -14., -13., -12., -11., -10., -9., -8., -7., -6., -5., -4., -3., -2., -1., 0., 1., 2., 3., 4., 5., 6., 7., 8., 9., 10., 11., 12., 13., 14., 15., 16., 17., 18., 19., 20., 21., 22., 23., 24., 25., 26., 27., 28., 29., 30., 31., 32., 33., 34., 35., 36., 37., 38., 39., 40. };
 
 const double R=0.4;
+
+const int nbins_pt = 2;
+const double bins_pt[nbins_pt+1] = { 30.,40.,60.};
+const string name_pt[nbins_pt] = {"_30_40GeV","_40_60GeV"};
+const string title_pt[nbins_pt] = {"30-40 GeV p_{T}^{reco}","40-60 GeV p_{T}^{reco}"};
+const int marker_pt[nbins_pt] = { 20, 24 };
 
 // ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ FUNCTIONS ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
 //TString gausEq( double mean, double sigma ) {
@@ -37,15 +45,82 @@ const double R=0.4;
 //    return eq;
 //};
 
+void drawText(const char *text, float xp, float yp, int size){
+  TLatex *tex = new TLatex(xp,yp,text);
+  tex->SetTextFont(63);
+  tex->SetTextSize(size);
+  tex->SetTextColor(kBlack);
+  tex->SetLineWidth(1);
+  //tex->SetTextFont(42);
+  tex->SetNDC();
+  tex->Draw();
+};
+
 void FillSmearedResponse(double jetPt, double truthPt, TH2D *hSmeared, TH1D *hDeltaPt) {
     double mean_dPt = 0.;
     for (int i=1; i<=hDeltaPt->GetNbinsX(); ++i) {
         if (hDeltaPt->GetBinContent(i)==0) { continue; }
         double delta_pt = hDeltaPt->GetBinCenter(i);
         double weight = hDeltaPt->GetBinContent(i);
-        mean_dPt += (jetPt+delta_pt)*weight;
+        mean_dPt += (delta_pt)*weight;
     }
-    hSmeared->Fill(truthPt,mean_dPt);
+    hSmeared->Fill(truthPt,jetPt+mean_dPt);
+};
+
+TH2D* smear_TH2_by_TH1(const TH2D* hg_in, TH1D* pdf, const string title="smeared") {
+/* #include <cmath> */
+    // Assumptions:
+    //      x-axis bin_widths in hg_in and pdf are constant and equal to each other
+    //      x-axis 0 occurse in the middle of a pdf bin, and is contained in the range of pdf
+    pdf->Scale(1./pdf->Integral());
+    auto hg_out = (TH2D*) hg_in->Clone(title.c_str());
+    hg_out->Reset();
+
+    const double eps = 0.25;
+    const TAxis* pdf_axis = pdf->GetXaxis();
+    double loc0 = pdf_axis->GetBinCenter(1) / pdf_axis->GetBinWidth(1); // must be close to whole number
+    loc0 += (loc0<0) ? -eps : eps;
+    const int bin_offset = (int) loc0;
+    const int n_pdf = pdf->GetNbinsX();
+
+    const int ncols = hg_in->GetNbinsX();
+    for (int row = 1; row <= hg_in->GetNbinsY(); ++row) {
+        for (int col = 1; col <= ncols; ++col) {
+            double sum_col = 0;
+            double sumsq_err = 0;
+            for (int i_pdf = 1; i_pdf <= n_pdf; ++i_pdf) {
+                const int i_from = col - (i_pdf + bin_offset - 1);
+                if (i_from < 1 || i_from > ncols) continue;
+                sum_col += hg_in->GetBinContent(i_from,row) * pdf->GetBinContent(i_pdf);
+                sumsq_err += TMath::Sq(hg_in->GetBinError(i_from,row) * pdf->GetBinContent(i_pdf));
+            }
+            if (sum_col > 0) {
+                hg_out->SetBinContent(col,row,sum_col);
+                hg_out->SetBinError  (col,row, TMath::Sqrt(sumsq_err));
+            }
+        }
+    }
+    hg_out->SetTitle(";HIJING BG-smeared p_{T}^{calo};p_{T}^{truth}");
+    return hg_out;
+};
+
+void normalize_truth_axis( TH2D *hResponse, TH1D *hPyTruth ){
+    TH1D *hSmeared_truthPt = (TH1D*) hResponse->ProjectionY("hSmeared_truthPt",1,-1,"E");
+    
+    TH1D *h_ratio = (TH1D*) hPyTruth->Clone("h_ratio");
+    h_ratio->Divide(hSmeared_truthPt);
+    for (int ix=1; ix<hResponse->GetNbinsX(); ++ix){
+        for (int iy=1; iy<hResponse->GetNbinsY(); ++iy){
+            if (h_ratio->GetBinContent(iy)>0. && h_ratio->GetBinContent(iy)<10000) {
+                double newContent = hResponse->GetBinContent(ix,iy) * h_ratio->GetBinContent(iy);
+                double newError = hResponse->GetBinError(ix,iy) * h_ratio->GetBinError(iy);
+                hResponse->SetBinContent(ix,iy,newContent);
+                hResponse->SetBinError(ix,iy,newError);
+            }
+        }
+    }
+    hSmeared_truthPt->Delete();
+    h_ratio->Delete();
 };
 
 int get_centrality_bin( float centrality ) {
@@ -96,6 +171,8 @@ void SmearJetResponse(){
     vector<float> *h_CaloJetArea = NULL;
     float embEta_A, embPhi_A, embPt_A, embEta_B, embPhi_B, embPt_B;
     
+    auto *c1 = new TCanvas("c1","",700,500);
+
     t_jetBG->SetBranchAddress("id",&h_id);
     t_jetBG->SetBranchAddress("rho",&h_rho);
     t_jetBG->SetBranchAddress("rho_sigma",&h_rho_sigma);
@@ -136,6 +213,8 @@ void SmearJetResponse(){
 
         bool have_sublead = h_CaloJetPt->size()-1; // check for a second hard jet
         int cent = get_centrality_bin( h_centrality );
+
+        if (h_CaloJetPt->at(0)<30.) { continue; }
 
         double leadPt = h_CaloJetPt->at(0);
         double leadEta = h_CaloJetEta->at(0);
@@ -217,12 +296,12 @@ void SmearJetResponse(){
     t_noEmb->SetBranchAddress("TruthJetPt",&TruthJetPt);
     t_noEmb->SetBranchAddress("TruthJetArea",&TruthJetArea);
 
-    TH2D *hResp_noEmbed = new TH2D("hResp_noEmbed",";p_{T}^{truth};p_{T}^{calo}",100,0.,100.,100,0.,100.);
+    TH2D *hResp_noEmbed = new TH2D("hResp_noEmbed",";p_{T}^{calo};p_{T}^{truth}",100,0.,100.,100,0.,100.);
     TH2D *hResp_noEmbed_smear[nbins_centrality];
     
     for (int i=0; i<nbins_centrality; ++i) {
         name = "hResp_noEmbed_smear" + name_centrality[i];
-        hResp_noEmbed_smear[i] = new TH2D(name,";p_{T}^{truth};HIJING BG-smeared p_{T}^{calo}",100,0.,100.,100,0.,100.);
+        hResp_noEmbed_smear[i] = new TH2D(name,";HIJING BG-smeared p_{T}^{calo};p_{T}^{truth}",100,0.,100.,100,0.,100.);
     }
 
     for (int ientry=0; ientry<t_noEmb->GetEntries(); ++ientry) {
@@ -231,6 +310,8 @@ void SmearJetResponse(){
 
         if (TruthJetPt->size()<=0 || p_CaloJetPt->size()<=0 || TruthJetEta->size()<=0 || p_CaloJetEta->size()<=0 || TruthJetPhi->size()<=0 || p_CaloJetPhi->size()<=0 || TruthJetPt->at(0)<=0 ) { continue; }
 
+        if (TruthJetPt->at(0)<30.) { continue; }
+        
         double truthPt = TruthJetPt->at(0);
         double truthEta = TruthJetEta->at(0);
         double truthPhi = TruthJetPhi->at(0); //        double truthE = TruthJetE->at(0);
@@ -247,15 +328,19 @@ void SmearJetResponse(){
             double jetArea = p_CaloJetArea->at(0);
 
             if (match_jet(truthEta,truthPhi,jetEta,jetPhi,0.4)) {
-                hResp_noEmbed->Fill(truthPt,jetPt);
-                for (int i=0; i<nbins_centrality; ++i) { FillSmearedResponse(jetPt,truthPt,hResp_noEmbed_smear[i],h_delta_pt[i]); }
+                hResp_noEmbed->Fill(jetPt,truthPt);
+//                for (int i=0; i<nbins_centrality; ++i) { FillSmearedResponse(jetPt,truthPt,hResp_noEmbed_smear[i],h_delta_pt[i]); }
                 match_truth = true;
             }
         }
 
         
     } // end PYTHIA loop
-
+    
+    for (int i=0; i<nbins_centrality; ++i) {
+        hResp_noEmbed_smear[i] = smear_TH2_by_TH1(hResp_noEmbed, h_delta_pt[i], Form("%s",hResp_noEmbed_smear[i]->GetName()));
+    }
+    
 //    TH1D *yproj = (TH1D*) hResp_noEmbed->ProjectionY("yproj",1,hResp_noEmbed->GetNbinsY(),"E");
 //    TH1D *xproj = (TH1D*) hResp_noEmbed->ProjectionX("xproj",1,hResp_noEmbed->GetNbinsX(),"E");
 //    for (int ix=1; ix<=hResp_noEmbed->GetNbinsX(); ++ix) {
@@ -284,12 +369,317 @@ void SmearJetResponse(){
     }
     
     
-    TFile *outFile = new TFile("analyze/SmearJetResponse.root","RECREATE");
+    
+    
+    
+    
+    //             PYTHIA JET WITH EMBED (CALO RHO)
+    TFile *embFile = new TFile("out/CaloJetRho_Aug16.root","READ"); // "p" corresponds to PYTHIA (or noEmbed)
+    TTree *t_caloRho = (TTree*)embFile->Get("T");
 
+    int c_id;
+    float c_rho, c_rho_sigma, c_centrality, c_impactparam;
+    vector<float> *c_CaloJetEta = NULL;
+    vector<float> *c_CaloJetPhi = NULL;
+    vector<float> *c_CaloJetE = NULL;
+    vector<float> *c_CaloJetPt = NULL;
+    vector<float> *c_CaloJetArea = NULL;
+    TruthJetEta = NULL;
+    TruthJetPhi = NULL;
+    TruthJetE = NULL;
+    TruthJetPt = NULL;
+    TruthJetArea = NULL;
+
+    t_caloRho->SetBranchAddress("id",&c_id);
+    t_caloRho->SetBranchAddress("rho",&c_rho);
+    t_caloRho->SetBranchAddress("rho_sigma",&c_rho_sigma);
+    t_caloRho->SetBranchAddress("centrality",&c_centrality);
+    t_caloRho->SetBranchAddress("impactparam",&c_impactparam);
+    t_caloRho->SetBranchAddress("CaloJetEta",&c_CaloJetEta);
+    t_caloRho->SetBranchAddress("CaloJetPhi",&c_CaloJetPhi);
+    t_caloRho->SetBranchAddress("CaloJetE",&c_CaloJetE);
+    t_caloRho->SetBranchAddress("CaloJetPt",&c_CaloJetPt);
+    t_caloRho->SetBranchAddress("CaloJetArea",&c_CaloJetArea);
+    t_caloRho->SetBranchAddress("TruthJetEta",&TruthJetEta);
+    t_caloRho->SetBranchAddress("TruthJetPhi",&TruthJetPhi);
+    t_caloRho->SetBranchAddress("TruthJetE",&TruthJetE);
+    t_caloRho->SetBranchAddress("TruthJetPt",&TruthJetPt);
+    t_caloRho->SetBranchAddress("TruthJetArea",&TruthJetArea);
+
+    TH2D *hResp_caloRho[nbins_centrality];
+    TH2D *hResp_caloJet[nbins_centrality];
+
+    for (int i=0; i<nbins_centrality; ++i) {
+        name = "hResp_caloRho" + name_centrality[i];
+        hResp_caloRho[i] = new TH2D(name,";p_{T}^{reco} from embedding [GeV];p_{T}^{truth} [GeV]",100,0.,100.,100,0.,100.);
+        name = "hResp_caloJet" + name_centrality[i];
+        hResp_caloJet[i] = new TH2D(name,";p_{T}^{reco} - #rho #cdot A [GeV];p_{T}^{truth} [GeV]",100,0.,100.,100,0.,100.);
+    }
+
+    for (int ientry=0; ientry<t_caloRho->GetEntries(); ++ientry) {
+        
+        t_caloRho->GetEntry(ientry);
+
+        if (TruthJetPt->size()<=0 || c_CaloJetPt->size()<=0 || TruthJetEta->size()<=0 || c_CaloJetEta->size()<=0 || TruthJetPhi->size()<=0 || c_CaloJetPhi->size()<=0 || TruthJetPt->at(0)<=0 ) { continue; }
+
+        if (TruthJetPt->at(0)<30.) { continue; }
+
+        int cent = get_centrality_bin( c_centrality );
+
+        double truthPt = TruthJetPt->at(0);
+        double truthEta = TruthJetEta->at(0);
+        double truthPhi = TruthJetPhi->at(0); //        double truthE = TruthJetE->at(0);
+                
+        bool match_truth = false;
+        
+        for (int i=0; i<c_CaloJetPt->size(); ++i) {
+
+            if (match_truth) { continue; }
+
+            double jetPt = c_CaloJetPt->at(0);
+            double jetEta = c_CaloJetEta->at(0);
+            double jetPhi = c_CaloJetPhi->at(0); //        double jetE = c_CaloJetE->at(0);
+            double jetArea = c_CaloJetArea->at(0);
+
+            if (match_jet(truthEta,truthPhi,jetEta,jetPhi,0.4)) {
+                hResp_caloRho[cent]->Fill(jetPt,truthPt);
+                double correctedPt = jetPt - c_rho*jetArea;
+                hResp_caloJet[cent]->Fill(correctedPt, truthPt);
+                match_truth = true;
+            }
+        }
+
+        
+    } // end PYTHIA embed loop
+    
+
+// now, hResp_caloJet[i] and hResp_noEmbed_smear[i] should be *roughly* similar response matrices
+// normalize to PYTHIA truth pT spectrum
+    
+    TH1D *hPythiaTruth = (TH1D*) hResp_noEmbed->ProjectionY("hPythiaTruth",1,-1,"E");
+//    hPythiaTruth->GetYaxis()->SetTitle("#frac{1}{N_{jets}} #frac{dN_{jets}}{dp_{T}^{truth}} [GeV^{-1}]");
+    hPythiaTruth->SetTitle(";p_{T}^{truth} [GeV];1/N_{jets} dN_{jets}/dp_{T}^{truth} [GeV^{-1}]");
+
+    for (int i=0; i<nbins_centrality; ++i) {
+        normalize_truth_axis( hResp_noEmbed_smear[i], hPythiaTruth );
+        normalize_truth_axis( hResp_caloJet[i], hPythiaTruth );
+    }
+    
+
+    // PROJECT HISTOS HERE
+        
+    TH1D *hTruthPt_smear[nbins_centrality][nbins_pt];
+    TH1D *hTruthPt_embed[nbins_centrality][nbins_pt];
+    TH1D *hTruthPt[nbins_pt];
+
+    for (int p=0; p<nbins_pt; ++p) {
+
+        int binlo = hResp_noEmbed->GetXaxis()->FindBin(bins_pt[p] + 0.5);
+        int binhi = hResp_noEmbed->GetXaxis()->FindBin(bins_pt[p+1] + 0.5) - 1;
+
+        name = "hTruthPt" + name_pt[p];
+        hTruthPt[p] = (TH1D*) hResp_noEmbed->ProjectionY(name,binlo,binhi,"E");
+        hTruthPt[p]->Scale(1./hTruthPt[p]->Integral());
+        hTruthPt[p]->SetMarkerStyle(marker_pt[p]);
+        hTruthPt[p]->SetMarkerColor(kBlack);
+        hTruthPt[p]->SetLineColor(kBlack);
+
+        for (int i=0; i<nbins_centrality; ++i) {
+
+            name = "hTruthPt_smear" + name_pt[p] + "_" + name_centrality[i] + "percent";
+            hTruthPt_smear[i][p] = (TH1D*) hResp_noEmbed_smear[i]->ProjectionY(name,binlo,binhi,"E");
+            name = "hTruthPt_embed" + name_pt[p] + "_" + name_centrality[i] + "percent";
+            hTruthPt_embed[i][p] = (TH1D*) hResp_caloJet[i]->ProjectionY(name,binlo,binhi,"E");
+        }
+    }
+
+
+    TH1D *hTruthPt_ratio[nbins_centrality][nbins_pt];
+    for (int i=0; i<nbins_centrality; ++i) {
+        for (int p=0; p<nbins_pt; ++p) {
+            hTruthPt_smear[i][p]->Scale(1./hTruthPt_smear[i][p]->Integral());
+            hTruthPt_embed[i][p]->Scale(1./hTruthPt_embed[i][p]->Integral());
+            hTruthPt_ratio[i][p] = (TH1D*)hTruthPt_smear[i][p]->Clone();
+            name = "hTruthPt_ratio" + name_pt[p] + "_" + name_centrality[i] + "percent";
+            hTruthPt_ratio[i][p]->SetName(name);
+            hTruthPt_ratio[i][p]->Divide(hTruthPt_embed[i][p]);
+            hTruthPt_ratio[i][p]->SetTitle(";p_{T}^{truth};smeared / embedded");
+            hTruthPt_ratio[i][p]->SetLineColor(color_centrality[i]);
+            hTruthPt_ratio[i][p]->SetMarkerColor(color_centrality[i]);
+            hTruthPt_ratio[i][p]->SetMarkerStyle(marker_pt[p]);
+            hTruthPt_smear[i][p]->SetLineColor(color_centrality[i]);
+            hTruthPt_smear[i][p]->SetMarkerColor(color_centrality[i]);
+            hTruthPt_smear[i][p]->SetMarkerStyle(marker_pt[1]);
+            hTruthPt_embed[i][p]->SetLineColor(color_centrality[i]);
+            hTruthPt_embed[i][p]->SetMarkerColor(color_centrality[i]);
+            hTruthPt_embed[i][p]->SetMarkerStyle(marker_pt[0]);
+        }
+    }
+
+    
+    auto *c0 = new TCanvas("c0","",700,500);
+    for (int i=0; i<nbins_centrality; ++i) {
+        hTruthPt_ratio[i][0]->Draw("pSAME");
+    }
+    c0->BuildLegend();
+
+    auto *c2 = new TCanvas("c2","",700,500);
+    for (int i=0; i<nbins_centrality; ++i) {
+        hTruthPt_ratio[i][1]->Draw("pSAME");
+    }
+    c2->BuildLegend();
+    
+
+    
+    auto *c3 = new TCanvas("c3","",700,500);
+
+    for (int p=0; p<nbins_pt; ++p) {
+        hTruthPt[p]->Draw("P");
+        for (int i=0; i<nbins_centrality; ++i) {
+            hTruthPt[p]->SetAxisRange(0.,.1,"Y");
+//            hTruthPt[p]->Draw("PSAME");
+//            if (i==0) { hTruthPt[p]->Draw("P"); }
+            hTruthPt_smear[i][p]->Draw("PSAME");
+            hTruthPt_embed[i][p]->Draw("PSAME");
+        }
+        c3->BuildLegend();
+        name = "plots/TruthPt" + name_pt[p] + ".pdf";
+        c3->SaveAs(name,"PDF");
+    }
+    
+    
+    for (int p=0; p<nbins_pt; ++p) {
+        hTruthPt[p]->SetLineColor(kBlack);
+        hTruthPt[p]->SetMarkerColor(kBlack);
+        hTruthPt[p]->SetMarkerStyle(24);
+        for (int i=0; i<nbins_centrality; ++i) {
+            hTruthPt_smear[i][p]->SetLineColor(9);
+            hTruthPt_smear[i][p]->SetMarkerColor(9);
+            hTruthPt_smear[i][p]->SetMarkerStyle(29);
+            hTruthPt_embed[i][p]->SetLineColor(8);
+            hTruthPt_embed[i][p]->SetMarkerColor(8);
+            hTruthPt_embed[i][p]->SetMarkerStyle(33);
+        }
+    }
+    for (int p=0; p<nbins_pt; ++p) {
+        for (int i=0; i<nbins_centrality; ++i) {
+            hTruthPt[p]->Draw("P");
+            hTruthPt_smear[i][p]->Draw("PSAME");
+            hTruthPt_embed[i][p]->Draw("PSAME");
+            c3->BuildLegend(.6,.7,.98,.98);
+            name = "plots/TruthPt" + name_pt[p] + name_centrality[i] + ".pdf";
+            c3->SaveAs(name,"PDF");
+        }
+    }
+    
+    
+    
+    TFile *outFile = new TFile("analyze/SmearJetResponse.root","RECREATE");
+    for (int i=0; i<nbins_centrality; ++i) { h_delta_pt[i]->Write(); }
     hResp_noEmbed->Write();
     for (int i=0; i<nbins_centrality; ++i) {
         hResp_noEmbed_smear[i]->Write();
     }
+    for (int i=0; i<nbins_centrality; ++i) {
+        hResp_caloJet[i]->Write();
+    }
+    for (int p=0; p<nbins_pt; ++p) {
+        for (int i=0; i<nbins_centrality; ++i) {
+            hTruthPt_embed[i][p]->Write();
+            hTruthPt_smear[i][p]->Write();
+            hTruthPt_ratio[i][p]->Write();
+        }
+    }
+    for (int p=0; p<nbins_pt; ++p) { hTruthPt[p]->Write(); }
+    
+    
+    
+    
+    
+    // ratio plots
+    
+    auto *c4 = new TCanvas("c4","",500,500);
+    c4->SetBottomMargin(0.2);
+    TPad *pad1 = new TPad("pad1","pad1",0,0.3,1,1);
+    pad1->SetTopMargin(0.025);
+    pad1->SetBottomMargin(0);
+    pad1->SetRightMargin(0.025);
+    pad1->SetLeftMargin(0.12);
+    pad1->Draw();
+    
+    TPad *pad2 = new TPad("pad2","pad2",0,0,1,0.3);
+    pad2->SetTopMargin(0);
+    pad2->SetRightMargin(0.025);
+    pad2->SetBottomMargin(0.3);
+    pad2->SetLeftMargin(0.12);
+    pad2->Draw();
+
+
+    for (int p=0; p<1; ++p) {
+        hTruthPt[p]->SetTitle(";p_{T}^{truth} [GeV];1/N_{jets} dN_{jets}/dp_{T}^{truth} [GeV^{-1}]");
+//        for (int i : { 0, 4, 9 }) {
+        for (int i=0; i<nbins_centrality; ++i) {
+
+            pad1->cd();
+            hTruthPt[p]->SetAxisRange(0.000001,1.,"Y");
+            hTruthPt[p]->SetStats(0);
+            hTruthPt[p]->GetYaxis()->SetLabelSize(.03);
+            hTruthPt[p]->GetYaxis()->SetTitleSize(.05);
+            hTruthPt[p]->GetYaxis()->SetTitleOffset(1.05);
+            hTruthPt[p]->Draw("P");
+            hTruthPt_smear[i][p]->Draw("PSAME");
+            hTruthPt_embed[i][p]->Draw("PSAME");
+            
+            cout<<hTruthPt[p]->Integral()<<" \t"<<hTruthPt_smear[i][p]->Integral()<<" \t"<<hTruthPt_embed[i][p]->Integral()<<endl;
+
+            title = hTruthPt[p]->GetTitle();
+            hTruthPt[p]->SetTitle("pythia truth");
+            hTruthPt_smear[i][p]->SetTitle("smeared");
+            hTruthPt_embed[i][p]->SetTitle("embedded");
+            auto leg = (TLegend*)pad1->BuildLegend(.58,.34,.86,.63);
+            leg->SetFillColorAlpha(1,0.);
+            leg->SetLineColorAlpha(1,0.);
+            hTruthPt[p]->SetTitle(title);
+
+            drawText(title_pt[p].c_str(), .6, 0.8, 20);
+            drawText(title_centrality[i].c_str(), .65, 0.72, 20);
+
+            c4->cd();
+
+            pad2->cd();
+            hTruthPt_ratio[i][p]->SetAxisRange(0.8,1.2,"Y");
+            hTruthPt_ratio[i][p]->GetXaxis()->SetTitleSize(.1);
+            hTruthPt_ratio[i][p]->GetXaxis()->SetTitleOffset(1.);
+            hTruthPt_ratio[i][p]->GetXaxis()->SetLabelSize(.08);
+            hTruthPt_ratio[i][p]->GetYaxis()->SetTitleSize(.1);
+            hTruthPt_ratio[i][p]->GetYaxis()->SetTitleOffset(.4);
+            hTruthPt_ratio[i][p]->GetYaxis()->SetLabelSize(.08);
+            hTruthPt_ratio[i][p]->SetLineColor(kBlack);
+            hTruthPt_ratio[i][p]->SetMarkerColor(kBlack);
+            hTruthPt_ratio[i][p]->SetMarkerSize(0.7);
+            hTruthPt_ratio[i][p]->SetStats(0);
+            hTruthPt_ratio[i][p]->Draw("P");
+
+            TF1 *unity_line = new TF1("unity_line","1.",0,100);
+            unity_line->SetLineStyle(3);
+            unity_line->SetLineColor(kBlack);
+            unity_line->Draw("SAME");
+
+            c4->cd();
+      
+            name = "plots/TruthPtSpectraWithRatio" + name_pt[p] + name_centrality[i] + ".pdf";
+            c4->SaveAs(name,"PDF");
+            
+            pad1->SetLogy();
+            name = "plots/TruthPtSpectraWithRatio" + name_pt[p] + name_centrality[i] + "_logy.pdf";
+            leg->SetX1NDC(.22);
+            leg->SetY1NDC(.15);
+            leg->SetX2NDC(.50);
+            leg->SetY2NDC(.41);
+            c4->SaveAs(name,"PDF");
+        }
+    }
+    
+    
     
 }
-
