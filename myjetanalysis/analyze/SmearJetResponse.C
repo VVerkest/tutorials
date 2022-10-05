@@ -3,9 +3,22 @@
 
 // Takes in PYTHIA and truth jets (without embedding) and smears the PYTHIA jets
 // by sampling from the HIJING deltaPt distribution. The delta pT distribution
-// comes from the HIJING BG event with a manually-embedded high-pT jet. Using BG
+// comes from the HIJING BG event with a manually-inserted high-pT jet. Using BG
 // estimation, delta pT = pT,calo - rho*A - pT,truth, where pT,calo is of a jet
 // geometrically matched to the embedded jet. All is done in centrality bins.
+
+// output files located at /sphenix/user/verkest/tutorials/myjetanalysis/out
+
+// ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ IMPORTANT HISTOS ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
+//  h_delta_pt[nbins_centrality]                    delta pT = pT,calo - rho*A - pT from HIJING
+//  hTruthPt[nbins_pt]                              truth spectrum of det Pythia jets (out actual TRUTH)
+//  hResp_noEmbed                                   RESPONSE MATRIX: truth<->det Pythia jets
+//  hResp_noEmbed_smear[nbins_centrality]           RESPONSE MATRIX: truth<->HIJING-smeared det Pythia jets
+//  hResp_caloJet[nbins_centrality]                 RESPONSE MATRIX: truth<->embedded det Pythia jets
+//  hTruthPt_smear[nbins_centrality][nbins_pt]      truth spectrum from HIJING-smeared det Pythia jets
+//  hTruthPt_embed[nbins_centrality][nbins_pt]      truth spectrum from embedded det Pythia jets
+//  hTruthPt_ratio[nbins_centrality][nbins_pt]      smeared divided by embed pT spectra reatio
+
 
 #include <vector>
 #include <iostream>
@@ -15,6 +28,11 @@
 #include <TH2D.h>
 
 // ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ CONSTANTS ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
+//const string hFileName = "out/jet_bg/JetPlusBackground_136.root";
+const char *hFileName = "out/JetPlusBackground_all.root";
+const char *pFileName = "out/CaloJetRho_noEmbed_Sept20.root";
+const char *embFileName = "out/CaloJetRho_Aug16.root";
+
 const int nbins_centrality = 10;
 const double bins_centrality[nbins_centrality+1] = { 0., 10., 20., 30., 40., 50., 60., 70., 80., 90., 100. };
 const string name_centrality[nbins_centrality] = { "_0_10", "_10_20", "_20_30", "_30_40", "_40_50", "_50_60", "_60_70", "_70_80", "_80_90", "_90_100" };
@@ -33,18 +51,6 @@ const string title_pt[nbins_pt] = {"30-40 GeV p_{T}^{reco}","40-60 GeV p_{T}^{re
 const int marker_pt[nbins_pt] = { 20, 24 };
 
 // ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ FUNCTIONS ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
-//TString gausEq( double mean, double sigma ) {
-//
-//    TString mu = Form("%f",mean);
-//    TString sig = Form("%f",sigma);
-//
-//    TString exp = "-0.5*pow( (x - " + mu + ")/" + sig + ",2)";
-////    TString exp = "-0.5*pow( (x - "; exp += mu; exp += ")/"; exp += sig; exp += ",2)";
-//    TString denom = "(" + sig + "*sqrt(2.*" + Form("%f",M_PI) + "))";
-//    TString eq = "exp(" + exp + ")/" + denom;
-//    return eq;
-//};
-
 void drawText(const char *text, float xp, float yp, int size){
   TLatex *tex = new TLatex(xp,yp,text);
   tex->SetTextFont(63);
@@ -68,7 +74,6 @@ void FillSmearedResponse(double jetPt, double truthPt, TH2D *hSmeared, TH1D *hDe
 };
 
 TH2D* smear_TH2_by_TH1(const TH2D* hg_in, TH1D* pdf, const string title="smeared") {
-/* #include <cmath> */
     // Assumptions:
     //      x-axis bin_widths in hg_in and pdf are constant and equal to each other
     //      x-axis 0 occurse in the middle of a pdf bin, and is contained in the range of pdf
@@ -159,7 +164,7 @@ void SmearJetResponse(){
     TString name, title; // free temporary variables
 
     //             HIJING (JET PLUS BACKGROUND)
-    TFile *hFile = new TFile("out/jet_bg/JetPlusBackground_136.root","READ"); // "h" corresponds to HIJING (or jetPlusBackground)
+    TFile *hFile = new TFile(hFileName,"READ"); // "h" corresponds to HIJING (or jetPlusBackground)
     TTree *t_jetBG = (TTree*)hFile->Get("T");
 
     int h_id;
@@ -264,7 +269,7 @@ void SmearJetResponse(){
     
 
     //             PYTHIA JET NO EMBED (NO EMBED)
-    TFile *pFile = new TFile("out/CaloJetRho_noEmbed_Sept20.root","READ"); // "p" corresponds to PYTHIA (or noEmbed)
+    TFile *pFile = new TFile(pFileName,"READ"); // "p" corresponds to PYTHIA (or noEmbed)
     TTree *t_noEmb = (TTree*)pFile->Get("T");
 
     int p_id;
@@ -374,7 +379,7 @@ void SmearJetResponse(){
     
     
     //             PYTHIA JET WITH EMBED (CALO RHO)
-    TFile *embFile = new TFile("out/CaloJetRho_Aug16.root","READ"); // "p" corresponds to PYTHIA (or noEmbed)
+    TFile *embFile = new TFile(embFileName,"READ"); // "p" corresponds to PYTHIA (or noEmbed)
     TTree *t_caloRho = (TTree*)embFile->Get("T");
 
     int c_id;
@@ -615,12 +620,13 @@ void SmearJetResponse(){
     pad2->Draw();
 
 
-    for (int p=0; p<1; ++p) {
+    for (int p=0; p<nbins_pt; ++p) {
         hTruthPt[p]->SetTitle(";p_{T}^{truth} [GeV];1/N_{jets} dN_{jets}/dp_{T}^{truth} [GeV^{-1}]");
 //        for (int i : { 0, 4, 9 }) {
         for (int i=0; i<nbins_centrality; ++i) {
 
             pad1->cd();
+            pad1->SetLogy();
             hTruthPt[p]->SetAxisRange(0.000001,1.,"Y");
             hTruthPt[p]->SetStats(0);
             hTruthPt[p]->GetYaxis()->SetLabelSize(.03);
@@ -629,16 +635,14 @@ void SmearJetResponse(){
             hTruthPt[p]->Draw("P");
             hTruthPt_smear[i][p]->Draw("PSAME");
             hTruthPt_embed[i][p]->Draw("PSAME");
-            
-            cout<<hTruthPt[p]->Integral()<<" \t"<<hTruthPt_smear[i][p]->Integral()<<" \t"<<hTruthPt_embed[i][p]->Integral()<<endl;
 
             title = hTruthPt[p]->GetTitle();
             hTruthPt[p]->SetTitle("pythia truth");
             hTruthPt_smear[i][p]->SetTitle("smeared");
             hTruthPt_embed[i][p]->SetTitle("embedded");
-            auto leg = (TLegend*)pad1->BuildLegend(.58,.34,.86,.63);
-            leg->SetFillColorAlpha(1,0.);
-            leg->SetLineColorAlpha(1,0.);
+            auto leg = (TLegend*)pad1->BuildLegend(.22,.15,.5,.41);
+            leg->SetFillColorAlpha(kWhite,0.);
+            leg->SetLineColorAlpha(kWhite,0.);
             hTruthPt[p]->SetTitle(title);
 
             drawText(title_pt[p].c_str(), .6, 0.8, 20);
@@ -666,16 +670,9 @@ void SmearJetResponse(){
             unity_line->Draw("SAME");
 
             c4->cd();
-      
-            name = "plots/TruthPtSpectraWithRatio" + name_pt[p] + name_centrality[i] + ".pdf";
-            c4->SaveAs(name,"PDF");
             
             pad1->SetLogy();
             name = "plots/TruthPtSpectraWithRatio" + name_pt[p] + name_centrality[i] + "_logy.pdf";
-            leg->SetX1NDC(.22);
-            leg->SetY1NDC(.15);
-            leg->SetX2NDC(.50);
-            leg->SetY2NDC(.41);
             c4->SaveAs(name,"PDF");
         }
     }
