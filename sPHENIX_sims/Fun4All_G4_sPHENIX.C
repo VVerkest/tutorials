@@ -1,6 +1,10 @@
+
+//modified and simplified Fun4All macro (Simple inputgen + HCALOUT)
+
 #ifndef MACRO_FUN4ALLG4SPHENIX_C
 #define MACRO_FUN4ALLG4SPHENIX_C
 
+#include "Calib.h"
 #include <GlobalVariables.C>
 
 #include <DisplayOn.C>
@@ -32,16 +36,16 @@
 
 #include <phool/PHRandomSeed.h>
 #include <phool/recoConsts.h>
-#include <anatutorial/AnaTutorial.h>
 
-R__LOAD_LIBRARY(libanatutorial.so)
 R__LOAD_LIBRARY(libfun4all.so)
 R__LOAD_LIBRARY(libffamodules.so)
+R__LOAD_LIBRARY(libCalib.so.0.0.0)
+
 
 // For HepMC Hijing
 // try inputFile = /sphenix/sim/sim01/sphnxpro/sHijing_HepMC/sHijing_0-12fm.dat
 
-int Fun4All_AnaTutorial_sPHENIX_Jets(
+int Fun4All_G4_sPHENIX(
     const int nEvents = 1,
     const string &inputFile = "https://www.phenix.bnl.gov/WWW/publish/phnxbld/sPHENIX/files/sPHENIX_G4Hits_sHijing_9-11fm_00000_00010.root",
     const string &outputFile = "G4sPHENIX.root",
@@ -57,70 +61,16 @@ int Fun4All_AnaTutorial_sPHENIX_Jets(
 
   // just if we set some flags somewhere in this macro
   recoConsts *rc = recoConsts::instance();
-  // By default every random number generator uses
-  // PHRandomSeed() which reads /dev/urandom to get its seed
-  // if the RANDOMSEED flag is set its value is taken as seed
-  // You can either set this to a random value using PHRandomSeed()
-  // which will make all seeds identical (not sure what the point of
-  // this would be:
-  //  rc->set_IntFlag("RANDOMSEED",PHRandomSeed());
-  // or set it to a fixed value so you can debug your code
-  //  rc->set_IntFlag("RANDOMSEED", 12345);
-
 
   //===============
   // Input options
   //===============
   // verbosity setting (applies to all input managers)
   Input::VERBOSITY = 0;
-  // First enable the input generators
-  // Either:
-  // read previously generated g4-hits files, in this case it opens a DST and skips
-  // the simulations step completely. The G4Setup macro is only loaded to get information
-  // about the number of layers used for the cell reco code
-  //  Input::READHITS = true;
-  INPUTREADHITS::filename[0] = inputFile;
-  // if you use a filelist
-  // INPUTREADHITS::listfile[0] = inputFile;
-  // Or:
-  // Use particle generator
-  // And
-  // Further choose to embed newly simulated events to a previous simulation. Not compatible with `readhits = true`
-  // In case embedding into a production output, please double check your G4Setup_sPHENIX.C and G4_*.C consistent with those in the production macro folder
-  // E.g. /sphenix/sim//sim01/production/2016-07-21/single_particle/spacal2d/
-  //  Input::EMBED = true;
-  INPUTEMBED::filename[0] = embed_input_file;
-  // if you use a filelist
-  //INPUTEMBED::listfile[0] = embed_input_file;
 
-  Input::SIMPLE = false;
-  // Input::SIMPLE_NUMBER = 2; // if you need 2 of them
-  // Input::SIMPLE_VERBOSITY = 1;
-
-  //  Input::PYTHIA6 = true;
-
-  Input::PYTHIA8 = true;
+  Input::SIMPLE = true;
 
   //  Input::GUN = true;
-  //  Input::GUN_NUMBER = 3; // if you need 3 of them
-  // Input::GUN_VERBOSITY = 1;
-
-  //D0 generator
-  //Input::DZERO = false;
-  //Input::DZERO_VERBOSITY = 0;
-  //Lambda_c generator //Not ready yet
-  //Input::LAMBDAC = false;
-  //Input::LAMBDAC_VERBOSITY = 0;
-  // Upsilon generator
-  //Input::UPSILON = true;
-  //Input::UPSILON_NUMBER = 3; // if you need 3 of them
-  //Input::UPSILON_VERBOSITY = 0;
-
-  //  Input::HEPMC = true;
-  INPUTHEPMC::filename = inputFile;
-
-  // Event pile up simulation with collision rate in Hz MB collisions.
-  //Input::PILEUPRATE = 100e3;
 
   //-----------------
   // Initialize the selected Input/Event generation
@@ -136,42 +86,21 @@ int Fun4All_AnaTutorial_sPHENIX_Jets(
   // Simple Input generator:
   // if you run more than one of these Input::SIMPLE_NUMBER > 1
   // add the settings for other with [1], next with [2]...
+
   if (Input::SIMPLE)
   {
-    INPUTGENERATOR::SimpleEventGenerator[0]->add_particles("pi-", 5);
-    if (Input::HEPMC || Input::EMBED)
-    {
-      INPUTGENERATOR::SimpleEventGenerator[0]->set_reuse_existing_vertex(true);
-      INPUTGENERATOR::SimpleEventGenerator[0]->set_existing_vertex_offset_vector(0.0, 0.0, 0.0);
-    }
-    else
-    {
-      INPUTGENERATOR::SimpleEventGenerator[0]->set_vertex_distribution_function(PHG4SimpleEventGenerator::Gaus,
-                                                                                PHG4SimpleEventGenerator::Gaus,
-                                                                                PHG4SimpleEventGenerator::Gaus);
-      INPUTGENERATOR::SimpleEventGenerator[0]->set_vertex_distribution_mean(0., 0., 0.);
-      INPUTGENERATOR::SimpleEventGenerator[0]->set_vertex_distribution_width(0.01, 0.01, 5.);
-    }
-    INPUTGENERATOR::SimpleEventGenerator[0]->set_eta_range(-1, 1);
-    INPUTGENERATOR::SimpleEventGenerator[0]->set_phi_range(-M_PI, M_PI);
-    INPUTGENERATOR::SimpleEventGenerator[0]->set_pt_range(0.1, 20.);
+    INPUTGENERATOR::SimpleEventGenerator[0]->add_particles("pi-", 1);
+   
+    INPUTGENERATOR::SimpleEventGenerator[0]->set_vertex_distribution_function(PHG4SimpleEventGenerator::Uniform,
+                                                                                PHG4SimpleEventGenerator::Uniform,
+                                                                                PHG4SimpleEventGenerator::Uniform);                                      INPUTGENERATOR::SimpleEventGenerator[0]->set_vertex_distribution_mean(0., 0., 0.);
+    INPUTGENERATOR::SimpleEventGenerator[0]->set_vertex_distribution_mean(140., 140., 10.);
+    INPUTGENERATOR::SimpleEventGenerator[0]->set_vertex_distribution_width(0., 0., 0.);
+    INPUTGENERATOR::SimpleEventGenerator[0]->set_eta_range(0, 0);
+    INPUTGENERATOR::SimpleEventGenerator[0]->set_phi_range(0, 0);
+    INPUTGENERATOR::SimpleEventGenerator[0]->set_pt_range(10., 10.);
   }
-  // Upsilons
-  // if you run more than one of these Input::UPSILON_NUMBER > 1
-  // add the settings for other with [1], next with [2]...
-  if (Input::UPSILON)
-  {
-    INPUTGENERATOR::VectorMesonGenerator[0]->add_decay_particles("e", 0);
-    INPUTGENERATOR::VectorMesonGenerator[0]->set_rapidity_range(-1, 1);
-    INPUTGENERATOR::VectorMesonGenerator[0]->set_pt_range(0., 10.);
-    // Y species - select only one, last one wins
-    INPUTGENERATOR::VectorMesonGenerator[0]->set_upsilon_1s();
-    if (Input::HEPMC || Input::EMBED)
-    {
-      INPUTGENERATOR::VectorMesonGenerator[0]->set_reuse_existing_vertex(true);
-      INPUTGENERATOR::VectorMesonGenerator[0]->set_existing_vertex_offset_vector(0.0, 0.0, 0.0);
-    }
-  }
+
   // particle gun
   // if you run more than one of these Input::GUN_NUMBER > 1
   // add the settings for other with [1], next with [2]...
@@ -181,53 +110,12 @@ int Fun4All_AnaTutorial_sPHENIX_Jets(
     INPUTGENERATOR::Gun[0]->set_vtx(0, 0, 0);
   }
 
-  // pythia6
-  if (Input::PYTHIA6)
-  {
-    //! apply sPHENIX nominal beam parameter with 2mrad crossing as defined in sPH-TRG-2020-001
-    Input::ApplysPHENIXBeamParameter(INPUTGENERATOR::Pythia6);
-  }
-  // pythia8
-  if (Input::PYTHIA8)
-  {
-    //! apply sPHENIX nominal beam parameter with 2mrad crossing as defined in sPH-TRG-2020-001
-    Input::ApplysPHENIXBeamParameter(INPUTGENERATOR::Pythia8);
-  }
-
   //--------------
   // Set Input Manager specific options
   //--------------
   // can only be set after InputInit() is called
 
-  if (Input::HEPMC)
-  {
-    //! apply sPHENIX nominal beam parameter with 2mrad crossing as defined in sPH-TRG-2020-001
-    Input::ApplysPHENIXBeamParameter(INPUTMANAGER::HepMCInputManager);
-
-    // optional overriding beam parameters
-    //INPUTMANAGER::HepMCInputManager->set_vertex_distribution_width(100e-4, 100e-4, 8, 0);  //optional collision smear in space, time
-    //    INPUTMANAGER::HepMCInputManager->set_vertex_distribution_mean(0,0,0,0);//optional collision central position shift in space, time
-    // //optional choice of vertex distribution function in space, time
-    //INPUTMANAGER::HepMCInputManager->set_vertex_distribution_function(PHHepMCGenHelper::Gaus, PHHepMCGenHelper::Gaus, PHHepMCGenHelper::Gaus, PHHepMCGenHelper::Gaus);
-    //! embedding ID for the event
-    //! positive ID is the embedded event of interest, e.g. jetty event from pythia
-    //! negative IDs are backgrounds, .e.g out of time pile up collisions
-    //! Usually, ID = 0 means the primary Au+Au collision background
-    //INPUTMANAGER::HepMCInputManager->set_embedding_id(Input::EmbedID);
-    if (Input::PILEUPRATE > 0)
-    {
-      // Copy vertex settings from foreground hepmc input
-      INPUTMANAGER::HepMCPileupInputManager->CopyHelperSettings(INPUTMANAGER::HepMCInputManager);
-      // and then modify the ones you want to be different
-      // INPUTMANAGER::HepMCPileupInputManager->set_vertex_distribution_width(100e-4,100e-4,8,0);
-    }
-  }
-  if (Input::PILEUPRATE > 0)
-  {
-    //! apply sPHENIX nominal beam parameter with 2mrad crossing as defined in sPH-TRG-2020-001
-    Input::ApplysPHENIXBeamParameter(INPUTMANAGER::HepMCPileupInputManager);
-  }
-  // register all input generators with Fun4All
+ // register all input generators with Fun4All
   InputRegister();
 
   if (! Input::READHITS)
@@ -240,6 +128,7 @@ int Fun4All_AnaTutorial_sPHENIX_Jets(
     HeadReco *head = new HeadReco();
     se->registerSubsystem(head);
   }
+
 // Flag Handler is always needed to read flags from input (if used)
 // and update our rc flags with them. At the end it saves all flags
 // again on the DST in the Flags node under the RUN node
@@ -262,14 +151,14 @@ int Fun4All_AnaTutorial_sPHENIX_Jets(
   //  Enable::DSTREADER = true;
 
   // turn the display on (default off)
-   //Enable::DISPLAY = true;
+   Enable::DISPLAY = false;
 
   //======================
   // What to run
   //======================
 
   // QA, main switch
-  Enable::QA = true;
+  Enable::QA = false;
 
   // Global options (enabled for all enables subsystems - if implemented)
   //  Enable::ABSORBER = true;
@@ -284,54 +173,54 @@ int Fun4All_AnaTutorial_sPHENIX_Jets(
   Enable::PIPE_ABSORBER = true;
 
   // central tracking
-  Enable::MVTX = true;
+  Enable::MVTX = false;
   Enable::MVTX_CELL = Enable::MVTX && true;
   Enable::MVTX_CLUSTER = Enable::MVTX_CELL && true;
   Enable::MVTX_QA = Enable::MVTX_CLUSTER && Enable::QA && true;
 
-  Enable::INTT = true;
+  Enable::INTT = false;
 //  Enable::INTT_ABSORBER = true; // enables layerwise support structure readout
 //  Enable::INTT_SUPPORT = true; // enable global support structure readout
   Enable::INTT_CELL = Enable::INTT && true;
   Enable::INTT_CLUSTER = Enable::INTT_CELL && true;
   Enable::INTT_QA = Enable::INTT_CLUSTER && Enable::QA && true;
 
-  Enable::TPC = true;
+  Enable::TPC = false;
   Enable::TPC_ABSORBER = true;
   Enable::TPC_CELL = Enable::TPC && true;
   Enable::TPC_CLUSTER = Enable::TPC_CELL && true;
   Enable::TPC_QA = Enable::TPC_CLUSTER && Enable::QA && true;
 
-  Enable::MICROMEGAS = true;
+  Enable::MICROMEGAS = false;
   Enable::MICROMEGAS_CELL = Enable::MICROMEGAS && true;
   Enable::MICROMEGAS_CLUSTER = Enable::MICROMEGAS_CELL && true;
   Enable::MICROMEGAS_QA = Enable::MICROMEGAS_CLUSTER && Enable::QA && true;
 
-  Enable::TRACKING_TRACK = (Enable::MICROMEGAS_CLUSTER && Enable::TPC_CLUSTER && Enable::INTT_CLUSTER && Enable::MVTX_CLUSTER) && true;
-  Enable::TRACKING_EVAL = Enable::TRACKING_TRACK && true;
+  Enable::TRACKING_TRACK = false;
+  //Enable::TRACKING_EVAL = Enable::TRACKING_TRACK && true;
   Enable::TRACKING_QA = Enable::TRACKING_TRACK && Enable::QA && true;
 
   //  cemc electronics + thin layer of W-epoxy to get albedo from cemc
   //  into the tracking, cannot run together with CEMC
   //  Enable::CEMCALBEDO = true;
 
-  Enable::CEMC = true;
+  Enable::CEMC = false;
   Enable::CEMC_ABSORBER = true;
   Enable::CEMC_CELL = Enable::CEMC && true;
   Enable::CEMC_TOWER = Enable::CEMC_CELL && true;
   Enable::CEMC_CLUSTER = Enable::CEMC_TOWER && true;
-  Enable::CEMC_EVAL = Enable::CEMC_CLUSTER && true;
+  //Enable::CEMC_EVAL = Enable::CEMC_CLUSTER && true;
   Enable::CEMC_QA = Enable::CEMC_CLUSTER && Enable::QA && true;
 
-  Enable::HCALIN = true;
+  Enable::HCALIN = false;
   Enable::HCALIN_ABSORBER = true;
   Enable::HCALIN_CELL = Enable::HCALIN && true;
   Enable::HCALIN_TOWER = Enable::HCALIN_CELL && true;
   Enable::HCALIN_CLUSTER = Enable::HCALIN_TOWER && true;
-  Enable::HCALIN_EVAL = Enable::HCALIN_CLUSTER && true;
+  //Enable::HCALIN_EVAL = Enable::HCALIN_CLUSTER && true;
   Enable::HCALIN_QA = Enable::HCALIN_CLUSTER && Enable::QA && true;
 
-  Enable::MAGNET = true;
+  Enable::MAGNET = false;
   Enable::MAGNET_ABSORBER = true;
 
   Enable::HCALOUT = true;
@@ -339,26 +228,26 @@ int Fun4All_AnaTutorial_sPHENIX_Jets(
   Enable::HCALOUT_CELL = Enable::HCALOUT && true;
   Enable::HCALOUT_TOWER = Enable::HCALOUT_CELL && true;
   Enable::HCALOUT_CLUSTER = Enable::HCALOUT_TOWER && true;
-  Enable::HCALOUT_EVAL = Enable::HCALOUT_CLUSTER && true;
+  //Enable::HCALOUT_EVAL = Enable::HCALOUT_CLUSTER && true;
   Enable::HCALOUT_QA = Enable::HCALOUT_CLUSTER && Enable::QA && true;
 
-  Enable::EPD = true;
+  Enable::EPD = false;
 
   Enable::BEAMLINE = true;
 //  Enable::BEAMLINE_ABSORBER = true;  // makes the beam line magnets sensitive volumes
 //  Enable::BEAMLINE_BLACKHOLE = true; // turns the beamline magnets into black holes
-  Enable::ZDC = true;
+  Enable::ZDC = false;
 //  Enable::ZDC_ABSORBER = true;
 //  Enable::ZDC_SUPPORT = true;
   Enable::ZDC_TOWER = Enable::ZDC && true;
-  Enable::ZDC_EVAL = Enable::ZDC_TOWER && true;
+  //Enable::ZDC_EVAL = Enable::ZDC_TOWER && true;
 
   //! forward flux return plug door. Out of acceptance and off by default.
   //Enable::PLUGDOOR = true;
   Enable::PLUGDOOR_ABSORBER = true;
 
-  Enable::GLOBAL_RECO = (Enable::BBCFAKE || Enable::TRACKING_TRACK) && true;
-  //Enable::GLOBAL_FASTSIM = true;
+  //Enable::GLOBAL_RECO = (Enable::BBCFAKE || Enable::TRACKING_TRACK) && true;
+  Enable::GLOBAL_FASTSIM = true;
 
   //Enable::KFPARTICLE = true;
   //Enable::KFPARTICLE_VERBOSITY = 1;
@@ -367,14 +256,14 @@ int Fun4All_AnaTutorial_sPHENIX_Jets(
 
   Enable::CALOTRIGGER = Enable::CEMC_TOWER && Enable::HCALIN_TOWER && Enable::HCALOUT_TOWER && false;
 
-  Enable::JETS = (Enable::GLOBAL_RECO || Enable::GLOBAL_FASTSIM) && true;
-  Enable::JETS_EVAL = Enable::JETS && true;
+  //Enable::JETS = (Enable::GLOBAL_RECO || Enable::GLOBAL_FASTSIM) && true;
+  //Enable::JETS_EVAL = Enable::JETS && true;
   Enable::JETS_QA = Enable::JETS && Enable::QA && true;
 
   // HI Jet Reco for p+Au / Au+Au collisions (default is false for
   // single particle / p+p-only simulations, or for p+Au / Au+Au
   // simulations which don't particularly care about jets)
-  Enable::HIJETS = Enable::JETS && Enable::CEMC_TOWER && Enable::HCALIN_TOWER && Enable::HCALOUT_TOWER && false;
+  //Enable::HIJETS = Enable::JETS && Enable::CEMC_TOWER && Enable::HCALIN_TOWER && Enable::HCALOUT_TOWER && false;
 
   // 3-D topoCluster reconstruction, potentially in all calorimeter layers
   Enable::TOPOCLUSTER = Enable::CEMC_TOWER && Enable::HCALIN_TOWER && Enable::HCALOUT_TOWER && false;
@@ -558,15 +447,15 @@ int Fun4All_AnaTutorial_sPHENIX_Jets(
   if (Enable::DSTREADER) G4DSTreader(outputroot + "_DSTReader.root");
 
   if (Enable::USER) UserAnalysisInit();
-
-  AnaTutorial *anaTutorial = new AnaTutorial("anaTutorial", outputroot + "_anaTutorial.root");
-  anaTutorial->setMinJetPt(10.);
-  anaTutorial->Verbosity(0);
-  anaTutorial->analyzeTracks(true);
-  anaTutorial->analyzeClusters(true);
-  anaTutorial->analyzeJets(true);
-  anaTutorial->analyzeTruth(false);
-  se->registerSubsystem(anaTutorial);
+    
+    
+    gSystem->Load("libCalib.so.0.0.0");
+    Calib *hcal_eval = new Calib();
+    hcal_eval->set_filename("hcal_tower_energies.root");
+    se->registerSubsystem(hcal_eval);
+    
+    
+    
 
   //======================
   // Run KFParticle on evt

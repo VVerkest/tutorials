@@ -1,44 +1,44 @@
+##############################################
+# please add new classes/includes/everything else in alphabetical order
+
 AUTOMAKE_OPTIONS = foreign
 
 lib_LTLIBRARIES = \
-    libanatutorial.la
+  libCalib.la
+
+AM_CPPFLAGS = \
+  -I$(includedir) \
+  -I$(OFFLINE_MAIN)/include \
+  -I$(G4_MAIN)/include \
+  -I$(ROOTSYS)/include
 
 AM_LDFLAGS = \
   -L$(libdir) \
   -L$(OFFLINE_MAIN)/lib
 
-AM_CPPFLAGS = \
-  -I$(includedir) \
-  -I$(OFFLINE_MAIN)/include \
-  -isystem`root-config --incdir`
+libCalib_la_LIBADD = \
+  -lphool \
+  -lg4detectors \
+  -lphg4hit \
+  -lSubsysReco \
+  -lcalo_io
 
 pkginclude_HEADERS = \
-  AnaTutorial.h
+  Calib.h
 
-libanatutorial_la_SOURCES = \
-  AnaTutorial.cc 
-
-libanatutorial_la_LDFLAGS = \
-  -L$(libdir) \
-  -L$(OFFLINE_MAIN)/lib \
-  -lcalo_io \
-  -lfun4all \
-  -lg4detectors_io \
-  -lphg4hit \
-  -lg4dst \
-  -lg4eval
-
+libCalib_la_SOURCES = \
+  Calib.cc
 
 ################################################
 # linking tests
 
-BUILT_SOURCES = testexternals.cc
-
 noinst_PROGRAMS = \
   testexternals
 
+BUILT_SOURCES = testexternals.cc
+
 testexternals_SOURCES = testexternals.cc
-testexternals_LDADD = libanatutorial.la
+testexternals_LDADD = libCalib.la
 
 testexternals.cc:
 	echo "//*** this is a generated file. Do not commit, do not edit" > $@
