@@ -6,7 +6,7 @@ Error        = condor-out/calo_rho/10GeV/condor$(index).err
 Log          = condor-out/calo_rho/10GeV/condor$(index).log
 Initialdir   = /sphenix/user/verkest/tutorials/myjetanalysis/
 
-Arguments = 1 0.2 10. 1 \"_$(index)\" 1
+Arguments = -1 0.2 10. 1 \"_$(index)\" 1
 
 # Jobs by default use 1.5Gb of RAM, you need to ask for more if needed
 # with request_memory. Be mindful - if you request too little your jobs will be evicted, if you request way too much it will take longer for your job to start

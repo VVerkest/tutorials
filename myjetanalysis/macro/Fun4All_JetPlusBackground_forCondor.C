@@ -42,7 +42,8 @@ void Fun4All_JetPlusBackground_forCondor(
   string invertexList = "lists/jet_bg/dst_vertex.list";
   string inbbcList = "lists/jet_bg/dst_bbc_g4hit.list";
   string fout_name="out/jet_bg/JetPlusBackground.root";
-    
+  
+
   if (index) {
     incaloList.insert(incaloList.find_first_of("."),index,4);
     incaloclusterList.insert(incaloclusterList.find_first_of("."),index,4);
