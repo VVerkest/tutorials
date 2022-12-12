@@ -175,11 +175,13 @@ int JetPlusBackground::process_event(PHCompositeNode* topNode)
   {
     float this_e = particles[ipart]->get_e();
 
-    if (this_e == 0.) continue;
+    if (this_e == 0. /*|| isnan(this_e)*/ ) continue;
 
     float this_px = particles[ipart]->get_px();
     float this_py = particles[ipart]->get_py();
     float this_pz = particles[ipart]->get_pz();
+
+  //  if ( isnan(this_px) || isnan(this_py) || isnan(this_pz) ) continue;
 
     if (this_e < 0)
     {
@@ -196,6 +198,8 @@ int JetPlusBackground::process_event(PHCompositeNode* topNode)
 
     pseudojet.set_user_index(ipart);
 
+    //if ( fabs(pseudojet.eta())>1. ) continue;
+      
     float _pt = pseudojet.perp();
     if (_pt < min_calo_pt) {
       /* cout << " CUT SMALL: " << _pt << " < " << min_calo_pt << endl; */

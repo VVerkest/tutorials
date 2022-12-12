@@ -140,7 +140,7 @@ void Fun4All_CaloJetRho_forCondor(
 //    const char *fout = fout_name.c_str();
   // change lower pt and eta cut to make them visible using the example
   //  pythia8 file
-  int print_stats_freq = 20;
+  int print_stats_freq = 100;
   CaloJetRhoEst *myJetAnalysis = new CaloJetRhoEst(min_calo_pt, nevnt, print_stats_freq, "AntiKt_Tower_r04", "AntiKt_Truth_r04", fout_name);
   myJetAnalysis->setPtRange(5, 100);
   myJetAnalysis->setEtaRange(-1.1, 1.1);

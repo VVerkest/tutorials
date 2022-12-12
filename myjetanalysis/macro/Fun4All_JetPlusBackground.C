@@ -44,7 +44,7 @@ void Fun4All_JetPlusBackground(
 
   // change lower pt and eta cut to make them visible using the example
   //  pythia8 file
-  int print_stats_freq = 20;
+  int print_stats_freq = 10;
   JetPlusBackground *myJetAnalysis = new JetPlusBackground(min_calo_pt, nevnt, print_stats_freq, "AntiKt_Tower_r04", fout_name);
   myJetAnalysis->setPtRange(5, 100);
   myJetAnalysis->setEtaRange(-1.1, 1.1);
