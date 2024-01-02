@@ -11,16 +11,16 @@
 #include <calotrigger/CaloTriggerInfo.h>
 
 /// Jet includes
-#include <g4jets/Jet.h>
-#include <g4jets/JetMap.h>
+#include <jetbase/Jet.h>
+#include <jetbase/JetMap.h>
 
 /// Tracking includes
-#include <g4vertex/GlobalVertex.h>
-#include <g4vertex/GlobalVertexMap.h>
+#include <globalvertex/GlobalVertex.h>
+#include <globalvertex/GlobalVertexMap.h>
 #include <trackbase_historic/SvtxTrack.h>
 #include <trackbase_historic/SvtxTrackMap.h>
-#include <trackbase_historic/SvtxVertex.h>
-#include <trackbase_historic/SvtxVertexMap.h>
+#include <globalvertex/SvtxVertex.h>
+#include <globalvertex/SvtxVertexMap.h>
 
 /// Truth evaluation includes
 #include <g4eval/JetEvalStack.h>
@@ -753,7 +753,16 @@ void AnaTutorial::getEMCalClusters(PHCompositeNode *topNode)
     return;
   }
 
-  GlobalVertex *vtx = vertexmap->begin()->second;
+  /// just take a bbc vertex
+  GlobalVertex *vtx = nullptr;
+  for(auto iter = vertexmap->begin(); iter!= vertexmap->end(); ++iter)
+    {
+      GlobalVertex* vertex = iter->second;
+      if(vertex->find_vtxids(GlobalVertex::MBD) != vertex->end_vtxids())
+	{
+	  vtx = vertex;
+	}
+    }
   if (vtx == nullptr)
   {
     return;
